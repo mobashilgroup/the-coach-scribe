@@ -1,8 +1,10 @@
 const CACHE_NAME = 'coach-scribe-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './config.js',
+  './assets/styles.css'
 ];
 
 self.addEventListener('install', event => {
