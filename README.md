@@ -30,4 +30,5 @@ window.APP_CONFIG = {
   GOOGLE_CLIENT_ID: '',                                // Add your Google Client ID if using Google auth
   PAYPAL_MODE: 'live',                                // 'live' or 'sandbox'
   PAYPAL_CLIENT_ID: ''                                // Add your PayPal Client ID if using payments
+
 };
