@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Coach Scribe</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Coach Scribe">
+    <link rel="apple-touch-icon" href="https://picsum.photos/seed/coach-scribe/192/192.jpg">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            border-radius: 40px;
+            border: 12px solid #1a1a1a;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            background: #ffffff;
+            margin: 0 auto;
+        }
+        
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #1a1a1a;
+            border-radius: 0 0 20px 20px;
+            z-index: 10;
+        }
+        
+        .phone-content {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .screen {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: #f3f4f6;
+        }
+        
+        .nav-item.active {
+            color: #4f46e5;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            width: 320px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-content-large {
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        .transcription-line {
+            margin-bottom: 12px;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .marker-button {
+            transition: all 0.2s;
+        }
+        
+        .marker-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .marker-button:active {
+            transform: scale(0.95);
+        }
+        
+        .gradient-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s;
+        }
+        
+        .gradient-button:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        
+        .online-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .offline-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Fix for screens with long content */
+        .screen-content {
+            padding-bottom: 80px;
+        }
+        
+        /* Privacy Policy and Terms styles */
+        .policy-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .policy-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .policy-content p {
+            margin-bottom: 12px;
+        }
+        
+        .policy-content ul {
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .policy-content li {
+            margin-bottom: 6px;
+        }
+        
+        /* Google Sign-In Button */
+        .google-signin-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #3c4043;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        .google-signin-button:hover {
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+        }
+        
+        .google-signin-button .google-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #4f46e5;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive adjustments for non-phone screens */
+        @media (min-width: 400px) {
+            body {
+                background-color: #f3f4f6;
+                padding: 20px;
+            }
+            
+            .phone-frame {
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-content">
+            <!-- Sign-In Screen -->
+            <div id="signin-screen" class="screen active p-6">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-8">
+                        <i class="fas fa-microphone-alt text-white text-3xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">The Coach Scribe</h1>
+                    <p class="text-gray-600 text-center mb-8 px-4">Transforma tu práctica de coaching con información basada en IA y comprensión emocional para conexiones más profundas con los clientes.</p>
+                    
+                    <!-- Google Sign-In Button -->
+                    <button id="google-signin-btn" class="google-signin-button">
+                        <svg class="google-icon" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Sign in with Google
+                    </button>
+                    
+                    <div id="signin-loading" class="hidden mb-4">
+                        <div class="spinner"></div>
+                        <p class="text-gray-600 text-sm mt-2">Signing in...</p>
+                    </div>
+                    
+                    <div id="signin-error" class="hidden text-red-500 text-sm mb-4 text-center">
+                        Failed to sign in. Please try again.
+                    </div>
+                    
+                    <p class="text-gray-500 text-xs text-center mt-8">
+                        By signing in, you agree to our Terms of Service and Privacy Policy
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Home Screen -->
+            <div id="home-screen" class="screen p-6">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-6">
+                        <i class="fas fa-microphone-alt text-white text-3xl"></i>
+                    </div>
+                    <h1 data-i18n="app.title" class="text-2xl font-bold text-gray-800 mb-2">The Coach Scribe</h1>
+                    <p data-i18n="app.subtitle" class="text-gray-600 text-center mb-8 px-4">Transforma tu práctica de coaching con información basada en IA y comprensión emocional para conexiones más profundas con los clientes.</p>
+                    
+                    <!-- User Info -->
+                    <div id="user-info" class="bg-indigo-50 rounded-lg p-4 mb-6 w-full max-w-xs">
+                        <div class="flex items-center">
+                            <img id="user-avatar" src="https://picsum.photos/seed/user/40/40.jpg" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <p id="user-name" class="font-medium text-gray-800">Coach User</p>
+                                <p id="user-email" class="text-sm text-gray-600">user@example.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Trial Chip -->
+                    <div id="trial-container" class="bg-indigo-50 rounded-lg p-4 mb-8 w-full max-w-xs">
+                        <div class="flex items-center justify-between">
+                            <span data-i18n="home.trial" class="text-indigo-700 font-medium">Trial gratuito</span>
+                            <span id="trial-time" class="text-indigo-700 font-medium">120 min</span>
+                        </div>
+                        <div class="w-full bg-indigo-200 rounded-full h-2 mt-2">
+                            <div id="trial-progress" class="bg-indigo-600 h-2 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- New Session Button -->
+                    <button id="new-session-btn" class="gradient-button text-white font-medium py-3 px-8 rounded-full mb-6 w-full max-w-xs">
+                        <i class="fas fa-plus mr-2"></i>
+                        <span data-i18n="home.newSession">Nueva sesión</span>
+                    </button>
+                    
+                    <!-- Activation Status -->
+                    <div id="activation-container" class="bg-gray-100 rounded-lg p-4 mb-6 w-full max-w-xs">
+                        <div class="flex items-center justify-between">
+                            <span id="activation-status-text" data-i18n="home.activationStatus" class="text-gray-700">Dispositivo no activado</span>
+                            <button id="activate-btn" class="text-indigo-600 font-medium">
+                                <span data-i18n="home.activateNow">Activar ahora</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Language Selector -->
+                    <button id="language-selector-btn" class="text-indigo-600 font-medium py-2 px-4 rounded-lg border border-indigo-200 w-full max-w-xs">
+                        <i class="fas fa-globe mr-2"></i>
+                        <span data-i18n="home.selectLanguage">Elegir idioma</span>
+                    </button>
+                    
+                    <!-- Sign Out Button -->
+                    <button id="signout-btn" class="text-gray-500 text-sm mt-4">
+                        <i class="fas fa-sign-out-alt mr-1"></i>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Consent Screen -->
+            <div id="consent-screen" class="screen p-6">
+                <div class="mb-8">
+                    <h2 data-i18n="consent.title" class="text-xl font-bold text-gray-800 mb-4">Consentimiento de grabación</h2>
+                    <p data-i18n="consent.description" class="text-gray-600 mb-6">
+                        Esta sesión será grabada y transcrita para generar un resumen con IA (Gemini). No almacenamos audio; sólo texto. Podés retirar el consentimiento y solicitar eliminación.
+                    </p>
+                    
+                    <!-- Legal Compliance -->
+                    <div class="bg-yellow-50 rounded-lg p-4 mb-6">
+                        <h3 data-i18n="consent.legalTitle" class="font-medium text-gray-800 mb-2">Información legal importante</h3>
+                        <p data-i18n="consent.usLegal" class="text-sm text-gray-600 mb-2">
+                            En algunos estados rige consentimiento de dos partes. Asegurate de contar con el consentimiento de todas las personas grabadas.
+                        </p>
+                        <p data-i18n="consent.euLegal" class="text-sm text-gray-600 mb-2">
+                            Informá finalidad y base legal (consentimiento), y respetá derechos de acceso, rectificación, supresión y portabilidad. El usuario puede retirar el consentimiento y solicitar eliminación.
+                        </p>
+                        <p data-i18n="consent.dataRetention" class="text-sm text-gray-600">
+                            No almacenamos audio; sólo texto. El texto se conserva según la retención elegida (30/90 días).
+                        </p>
+                        <p data-i18n="consent.legalNote" class="text-xs text-gray-500 mt-2">
+                            Este contenido es informativo y no constituye asesoramiento legal.
+                        </p>
+                    </div>
+                    
+                    <!-- Privacy and Terms Links -->
+                    <div class="flex space-x-4 mb-6">
+                        <a href="#" id="privacy-link" class="text-indigo-600 text-sm">
+                            <span data-i18n="consent.privacyPolicy">Política de Privacidad</span>
+                        </a>
+                        <a href="#" id="terms-link" class="text-indigo-600 text-sm">
+                            <span data-i18n="consent.terms">Términos de Servicio</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Consent Checkbox -->
+                    <div class="flex items-start mb-8">
+                        <input type="checkbox" id="consent-checkbox" class="mt-1 mr-3 h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500">
+                        <label for="consent-checkbox" data-i18n="consent.confirm" class="text-gray-700">
+                            Acepto ser grabado/a y que se transcriba la sesión para generar un resumen con IA.
+                        </label>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="flex space-x-4">
+                        <button id="consent-cancel-btn" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                            <span data-i18n="common.cancel">Cancelar</span>
+                        </button>
+                        <button id="consent-accept-btn" disabled class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span data-i18n="common.accept">Aceptar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preparation Screen -->
+            <div id="preparation-screen" class="screen p-6">
+                <div class="mb-8">
+                    <h2 data-i18n="preparation.title" class="text-xl font-bold text-gray-800 mb-4">Preparación para la sesión</h2>
+                    <p data-i18n="preparation.description" class="text-gray-600 mb-6">
+                        Antes de comenzar, asegúrate de seguir estos consejos para obtener los mejores resultados:
+                    </p>
+                    
+                    <!-- Tips -->
+                    <div class="bg-indigo-50 rounded-lg p-4 mb-6">
+                        <h3 data-i18n="preparation.tipsTitle" class="font-medium text-gray-800 mb-3">Consejos importantes:</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span data-i18n="preparation.tip1" class="text-gray-700">Activa el modo "No Molestar" en tu dispositivo</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span data-i18n="preparation.tip2" class="text-gray-700">Asegúrate de tener una buena conexión a internet</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span data-i18n="preparation.tip3" class="text-gray-700">No uses el Modo Avión durante la sesión</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span data-i18n="preparation.tip4" class="text-gray-700">Busca un lugar tranquilo sin ruidos de fondo</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="flex space-x-4">
+                        <button id="preparation-cancel-btn" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                            <span data-i18n="common.cancel">Cancelar</span>
+                        </button>
+                        <button id="preparation-ready-btn" class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg">
+                            <span data-i18n="preparation.ready">Listo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recording Screen -->
+            <div id="recording-screen" class="screen p-6">
+                <div class="mb-6">
+                    <!-- Timer and Status -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <span class="recording-indicator"></span>
+                            <span data-i18n="recording.recording" class="text-red-500 font-medium">Grabando</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span id="online-indicator" class="online-indicator"></span>
+                            <span id="connection-status" data-i18n="recording.online" class="text-sm text-gray-600">Conectado</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Language Detected -->
+                    <div class="bg-gray-100 rounded-lg p-3 mb-6 text-center">
+                        <span data-i18n="recording.inLanguage" class="text-gray-600">Grabando en </span>
+                        <span id="detected-language" class="font-medium">Español</span>
+                    </div>
+                    
+                    <!-- Timer -->
+                    <div class="text-center mb-6">
+                        <div id="recording-timer" class="text-3xl font-mono font-bold text-gray-800">00:00:00</div>
+                    </div>
+                    
+                    <!-- Transcription Area -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6 h-64 overflow-y-auto">
+                        <div id="transcription-container">
+                            <!-- Transcription lines will be added here dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Marker Buttons -->
+                    <div class="flex justify-around mb-8">
+                        <button class="marker-button flex flex-col items-center p-3 rounded-lg bg-blue-50 text-blue-600" data-marker="insight">
+                            <i class="fas fa-lightbulb text-xl mb-1"></i>
+                            <span data-i18n="recording.insight">Insight</span>
+                        </button>
+                        <button class="marker-button flex flex-col items-center p-3 rounded-lg bg-green-50 text-green-600" data-marker="task">
+                            <i class="fas fa-tasks text-xl mb-1"></i>
+                            <span data-i18n="recording.task">Tarea</span>
+                        </button>
+                        <button class="marker-button flex flex-col items-center p-3 rounded-lg bg-purple-50 text-purple-600" data-marker="goal">
+                            <i class="fas fa-bullseye text-xl mb-1"></i>
+                            <span data-i18n="recording.goal">Meta</span>
+                        </button>
+                    </div>
+                    
+                    <!-- End Session Button -->
+                    <button id="end-session-btn" class="w-full py-3 px-4 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition">
+                        <i class="fas fa-stop mr-2"></i>
+                        <span data-i18n="recording.endSession">Finalizar sesión</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Summary Screen -->
+            <div id="summary-screen" class="screen p-6">
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 data-i18n="summary.title" class="text-xl font-bold text-gray-800">Resumen de la sesión</h2>
+                        <div class="text-sm text-gray-500">
+                            <span data-i18n="summary.poweredBy">Powered by</span> Gemini
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Card -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.tldr" class="font-medium text-gray-800 mb-2">Resumen</h3>
+                        <p id="summary-tldr" class="text-gray-600">
+                            El cliente expresó preocupación por su equilibrio entre vida laboral y personal. Se identificaron oportunidades para mejorar la gestión del tiempo y establecer límites más claros.
+                        </p>
+                    </div>
+                    
+                    <!-- Topics -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.topics" class="font-medium text-gray-800 mb-2">Temas</h3>
+                        <ul id="summary-topics" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-indigo-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Equilibrio vida-trabajo</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-indigo-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Gestión del tiempo</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-indigo-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Establecimiento de límites</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Emotions -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.emotions" class="font-medium text-gray-800 mb-2">Emociones</h3>
+                        <ul id="summary-emotions" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-pink-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Preocupación</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-pink-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Esperanza</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Obstacles -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.obstacles" class="font-medium text-gray-800 mb-2">Obstáculos</h3>
+                        <ul id="summary-obstacles" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-yellow-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Dificultad para decir "no"</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-yellow-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Sobrecarga de trabajo</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Strengths -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.strengths" class="font-medium text-gray-800 mb-2">Fortalezas</h3>
+                        <ul id="summary-strengths" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-green-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Compromiso con el cambio</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-green-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Autoconciencia</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Recommendations -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.recommendations" class="font-medium text-gray-800 mb-2">Recomendaciones</h3>
+                        <ul id="summary-recommendations" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-blue-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Practicar técnicas de gestión del tiempo</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-blue-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">Establecer límites claros con el trabajo</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Questions -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.questions" class="font-medium text-gray-800 mb-2">Preguntas para reflexionar</h3>
+                        <ul id="summary-questions" class="space-y-1">
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-purple-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">¿Qué actividades me dan energía y cuáles me la quitan?</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-circle text-purple-500 text-xs mt-1.5 mr-2"></i>
+                                <span class="text-gray-600">¿Cómo puedo comunicar mis límites de manera efectiva?</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Markers -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h3 data-i18n="summary.markers" class="font-medium text-gray-800 mb-2">Marcadores</h3>
+                        <div id="summary-markers" class="space-y-2">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-lightbulb text-blue-500 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">Insight</div>
+                                    <div class="text-xs text-gray-500">00:05:23</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-tasks text-green-500 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">Tarea</div>
+                                    <div class="text-xs text-gray-500">00:12:45</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-bullseye text-purple-500 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-800">Meta</div>
+                                    <div class="text-xs text-gray-500">00:18:30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3 mb-6">
+                        <button id="export-btn" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                            <i class="fas fa-download mr-2"></i>
+                            <span data-i18n="summary.export">Exportar</span>
+                        </button>
+                        <button id="schedule-btn" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            <span data-i18n="summary.schedule">Agendar</span>
+                        </button>
+                        <button id="delete-btn" class="flex-1 py-2 px-4 border border-red-300 rounded-lg text-red-600 font-medium">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            <span data-i18n="summary.delete">Eliminar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clients Screen -->
+            <div id="clients-screen" class="screen p-6">
+                <div class="mb-6">
+                    <h2 data-i18n="clients.title" class="text-xl font-bold text-gray-800 mb-4">Clientes</h2>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative mb-6">
+                        <input type="text" id="client-search" placeholder="Buscar cliente..." data-i18n-placeholder="clients.searchPlaceholder" class="w-full py-3 pl-10 pr-4 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                    
+                    <!-- Clients List -->
+                    <div id="clients-list" class="space-y-4">
+                        <div class="client-item bg-white rounded-lg shadow-sm p-4 flex items-center cursor-pointer" data-client-id="1">
+                            <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mr-4">
+                                <span class="text-indigo-600 font-medium">JD</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-800">Juan Díaz</h3>
+                                <p class="text-sm text-gray-500">Última sesión: 15/05/2023</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                        
+                        <div class="client-item bg-white rounded-lg shadow-sm p-4 flex items-center cursor-pointer" data-client-id="2">
+                            <div class="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center mr-4">
+                                <span class="text-pink-600 font-medium">MG</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-800">María García</h3>
+                                <p class="text-sm text-gray-500">Última sesión: 10/05/2023</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                        
+                        <div class="client-item bg-white rounded-lg shadow-sm p-4 flex items-center cursor-pointer" data-client-id="3">
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                                <span class="text-green-600 font-medium">PL</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-800">Pedro López</h3>
+                                <p class="text-sm text-gray-500">Última sesión: 05/05/2023</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                        
+                        <div class="client-item bg-white rounded-lg shadow-sm p-4 flex items-center cursor-pointer" data-client-id="4">
+                            <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+                                <span class="text-yellow-600 font-medium">AM</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-800">Ana Martínez</h3>
+                                <p class="text-sm text-gray-500">Última sesión: 28/04/2023</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Client Button -->
+                    <button id="add-client-btn" class="w-full mt-6 py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium flex items-center justify-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        <span data-i18n="clients.addClient">Agregar cliente</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Client Detail Screen -->
+            <div id="client-detail-screen" class="screen p-6">
+                <div class="mb-6">
+                    <div class="flex items-center mb-6">
+                        <button id="back-to-clients-btn" class="mr-4 text-gray-600">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h2 data-i18n="clientDetail.title" class="text-xl font-bold text-gray-800">Detalle del cliente</h2>
+                    </div>
+                    
+                    <!-- Client Info -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <div class="flex items-center mb-4">
+                            <div id="client-avatar" class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mr-4">
+                                <span class="text-indigo-600 font-medium text-xl">JD</span>
+                            </div>
+                            <div>
+                                <h3 id="client-name" class="text-lg font-bold text-gray-800">Juan Díaz</h3>
+                                <p id="client-email" class="text-gray-600">juan.diaz@example.com</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Teléfono</p>
+                                <p id="client-phone" class="font-medium">+34 600 123 456</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Última sesión</p>
+                                <p id="client-last-session" class="font-medium">15/05/2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session History -->
+                    <div class="mb-6">
+                        <h3 data-i18n="clientDetail.sessionHistory" class="text-lg font-bold text-gray-800 mb-4">Historial de sesiones</h3>
+                        <div id="session-history" class="space-y-3">
+                            <div class="session-item bg-white rounded-lg shadow-sm p-4 cursor-pointer" data-session-id="1">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-medium text-gray-800">Sesión de coaching</h4>
+                                    <span class="text-sm text-gray-500">15/05/2023</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Equilibrio vida-trabajo y gestión del tiempo</p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span>45 min</span>
+                                    <i class="fas fa-file-alt ml-4 mr-1"></i>
+                                    <span>Resumen disponible</span>
+                                </div>
+                            </div>
+                            
+                            <div class="session-item bg-white rounded-lg shadow-sm p-4 cursor-pointer" data-session-id="2">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-medium text-gray-800">Sesión de coaching</h4>
+                                    <span class="text-sm text-gray-500">08/05/2023</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Establecimiento de metas profesionales</p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span>60 min</span>
+                                    <i class="fas fa-file-alt ml-4 mr-1"></i>
+                                    <span>Resumen disponible</span>
+                                </div>
+                            </div>
+                            
+                            <div class="session-item bg-white rounded-lg shadow-sm p-4 cursor-pointer" data-session-id="3">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-medium text-gray-800">Sesión de coaching</h4>
+                                    <span class="text-sm text-gray-500">01/05/2023</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Identificación de fortalezas y áreas de mejora</p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span>50 min</span>
+                                    <i class="fas fa-file-alt ml-4 mr-1"></i>
+                                    <span>Resumen disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3">
+                        <button id="new-session-client-btn" class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span data-i18n="clientDetail.newSession">Nueva sesión</span>
+                        </button>
+                        <button id="edit-client-btn" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                            <i class="fas fa-edit mr-2"></i>
+                            <span data-i18n="clientDetail.edit">Editar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Screen -->
+            <div id="settings-screen" class="screen p-6">
+                <div class="mb-6">
+                    <h2 data-i18n="settings.title" class="text-xl font-bold text-gray-800 mb-6">Ajustes</h2>
+                    
+                    <!-- User Account -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                        <div class="flex items-center mb-3">
+                            <img id="settings-user-avatar" src="https://picsum.photos/seed/user/40/40.jpg" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <h3 id="settings-user-name" class="font-medium text-gray-800">Coach User</h3>
+                                <p id="settings-user-email" class="text-sm text-gray-600">user@example.com</p>
+                            </div>
+                        </div>
+                        <button id="signout-settings-btn" class="text-indigo-600 font-medium">
+                            Sign Out
+                        </button>
+                    </div>
+                    
+                    <!-- Language Setting -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 data-i18n="settings.language" class="font-medium text-gray-800">Idioma</h3>
+                            <button id="settings-language-btn" class="text-indigo-600 font-medium">
+                                <span data-i18n="settings.moreLanguages">Más idiomas</span>
+                            </button>
+                        </div>
+                        <p id="current-language" class="text-gray-600">Español</p>
+                    </div>
+                    
+                    <!-- Privacy Settings -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                        <h3 data-i18n="settings.privacy" class="font-medium text-gray-800 mb-3">Privacidad</h3>
+                        <p data-i18n="settings.noAudioStorage" class="text-gray-600 mb-4">No almacenamos audio; sólo texto.</p>
+                        
+                        <div class="mb-3">
+                            <h4 data-i18n="settings.dataRetention" class="text-gray-700 font-medium mb-2">Retención de datos</h4>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center">
+                                    <input type="radio" name="retention" value="30" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                                    <span data-i18n="settings.30days" class="text-gray-600">30 días</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="retention" value="90" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                                    <span data-i18n="settings.90days" class="text-gray-600">90 días</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Activation Setting -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                        <div class="flex items-center justify-between">
+                            <h3 data-i18n="settings.activation" class="font-medium text-gray-800">Activación</h3>
+                            <button id="settings-activation-btn" class="text-indigo-600 font-medium">
+                                <span data-i18n="settings.changeDevice">Cambiar dispositivo</span>
+                            </button>
+                        </div>
+                        <p id="activation-status" class="text-gray-600 mt-2">No activado</p>
+                    </div>
+                    
+                    <!-- Legal Compliance -->
+                    <div class="bg-yellow-50 rounded-lg p-4 mb-6">
+                        <h3 data-i18n="settings.legalTitle" class="font-medium text-gray-800 mb-2">Información legal importante</h3>
+                        <p data-i18n="settings.usLegal" class="text-sm text-gray-600 mb-2">
+                            En algunos estados rige consentimiento de dos partes. Asegurate de contar con el consentimiento de todas las personas grabadas.
+                        </p>
+                        <p data-i18n="settings.euLegal" class="text-sm text-gray-600 mb-2">
+                            Informá finalidad y base legal (consentimiento), y respetá derechos de acceso, rectificación, supresión y portabilidad. El usuario puede retirar el consentimiento y solicitar eliminación.
+                        </p>
+                        <p data-i18n="settings.dataRetention" class="text-sm text-gray-600">
+                            No almacenamos audio; sólo texto. El texto se conserva según la retención elegida (30/90 días).
+                        </p>
+                        <p data-i18n="settings.legalNote" class="text-xs text-gray-500 mt-2">
+                            Este contenido es informativo y no constituye asesoramiento legal.
+                        </p>
+                    </div>
+                    
+                    <!-- Links -->
+                    <div class="space-y-3">
+                        <a href="#" id="settings-privacy-link" class="block text-indigo-600">
+                            <span data-i18n="settings.privacyPolicy">Política de Privacidad</span>
+                        </a>
+                        <a href="#" id="settings-terms-link" class="block text-indigo-600">
+                            <span data-i18n="settings.terms">Términos de Servicio</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-screen="home-screen">
+                    <i class="fas fa-home text-xl mb-1"></i>
+                    <span data-i18n="nav.home" class="text-xs">Inicio</span>
+                </div>
+                <div class="nav-item" data-screen="clients-screen">
+                    <i class="fas fa-users text-xl mb-1"></i>
+                    <span data-i18n="nav.clients" class="text-xs">Clientes</span>
+                </div>
+                <div class="nav-item" data-screen="recording-screen">
+                    <div class="w-12 h-12 rounded-full gradient-button flex items-center justify-center -mt-4">
+                        <i class="fas fa-microphone text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="nav-item" data-screen="summary-screen">
+                    <i class="fas fa-file-alt text-xl mb-1"></i>
+                    <span data-i18n="nav.summaries" class="text-xs">Resúmenes</span>
+                </div>
+                <div class="nav-item" data-screen="settings-screen">
+                    <i class="fas fa-cog text-xl mb-1"></i>
+                    <span data-i18n="nav.settings" class="text-xs">Ajustes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Language Selector Modal -->
+    <div id="language-modal" class="modal">
+        <div class="modal-content">
+            <h2 data-i18n="languageModal.title" class="text-xl font-bold text-gray-800 mb-4">Seleccionar idioma</h2>
+            <div class="space-y-3">
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="auto">
+                    <span data-i18n="languageModal.auto">Auto</span>
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="en">
+                    English
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="es">
+                    Español
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="pt">
+                    Português
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="fr">
+                    Français
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="it">
+                    Italiano
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="he">
+                    עברית
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="ru">
+                    Русский
+                </button>
+                <button class="language-option w-full text-left py-3 px-4 rounded-lg hover:bg-gray-100" data-lang="de">
+                    Deutsch
+                </button>
+            </div>
+            <button id="close-language-modal" class="mt-6 w-full py-3 px-4 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200">
+                <span data-i18n="common.cancel">Cancelar</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Activation Modal -->
+    <div id="activation-modal" class="modal">
+        <div class="modal-content">
+            <h2 data-i18n="activationModal.title" class="text-xl font-bold text-gray-800 mb-4">Activar dispositivo</h2>
+            <p data-i18n="activationModal.description" class="text-gray-600 mb-6">
+                Ingresa el código de activación que recibiste al comprar tu suscripción.
+            </p>
+            <input type="text" id="activation-code" placeholder="XXXX-XXXX-XXXX" data-i18n-placeholder="activationModal.placeholder" class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-6">
+            <div id="activation-error" class="text-red-500 text-sm mb-4 hidden">
+                Código inválido o ya utilizado. Por favor intenta nuevamente.
+            </div>
+            <div id="activation-loading" class="flex justify-center mb-4 hidden">
+                <div class="spinner"></div>
+            </div>
+            <div class="flex space-x-3">
+                <button id="cancel-activation" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                    <span data-i18n="common.cancel">Cancelar</span>
+                </button>
+                <button id="confirm-activation" class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg">
+                    <span data-i18n="activationModal.activate">Activar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trial Expired Modal -->
+    <div id="trial-expired-modal" class="modal">
+        <div class="modal-content">
+            <h2 data-i18n="trialExpired.title" class="text-xl font-bold text-gray-800 mb-4">Tu trial ha finalizado</h2>
+            <p data-i18n="trialExpired.description" class="text-gray-600 mb-6">
+                Tu prueba gratuita de 2 horas ha finalizado. Para continuar usando The Coach Scribe, completa un pago único de $49 en nuestro sitio web.
+            </p>
+            <div class="flex space-x-3">
+                <button id="activate-from-trial" class="flex-1 py-3 px-4 border border-indigo-300 rounded-lg text-indigo-600 font-medium">
+                    <span data-i18n="trialExpired.activate">Activar dispositivo</span>
+                </button>
+                <button id="buy-plan" class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg">
+                    <span data-i18n="trialExpired.buyPlan">Pagar $49 por acceso de por vida</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Client Modal -->
+    <div id="add-client-modal" class="modal">
+        <div class="modal-content">
+            <h2 data-i18n="addClientModal.title" class="text-xl font-bold text-gray-800 mb-4">Agregar nuevo cliente</h2>
+            <div class="space-y-4">
+                <div>
+                    <label data-i18n="addClientModal.name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <input type="text" id="new-client-name" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label data-i18n="addClientModal.email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="new-client-email" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label data-i18n="addClientModal.phone" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input type="tel" id="new-client-phone" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button id="cancel-add-client" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                    <span data-i18n="common.cancel">Cancelar</span>
+                </button>
+                <button id="confirm-add-client" class="flex-1 gradient-button text-white font-medium py-3 px-4 rounded-lg">
+                    <span data-i18n="addClientModal.add">Agregar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Privacy Policy Modal -->
+    <div id="privacy-modal" class="modal">
+        <div class="modal-content modal-content-large">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Política de Privacidad</h2>
+            <div class="policy-content">
+                <p><strong>Effective Date:</strong> August 2025</p>
+                <p><strong>Company:</strong> Mobashil Group S.A.</p>
+                <p><strong>Contact:</strong> info@thecoachscribe.com</p>
+                
+                <h3>1. Introduction</h3>
+                <p>This Privacy Policy explains how The Coach Scribe (owned by Mobashil Group S.A.) collects, uses, and protects your information when you use our mobile and web applications. By using our services, you agree to this Privacy Policy.</p>
+                
+                <h3>2. AI Technology</h3>
+                <p>Our app uses artificial intelligence exclusively powered by Gemini AI (developed by Google). All AI-generated summaries and features are based on this technology. No other AI engines or providers are involved in the processing or interpretation of your data.</p>
+                <p>We do not use AI to make automated decisions that affect users' rights or well-being. The AI is used strictly to assist coaches by generating summaries, extracting key insights, and improving workflow efficiency.</p>
+                
+                <h3>3. What We Collect</h3>
+                <p>We may collect the following categories of personal and session data:</p>
+                <ul>
+                    <li>Account Data: Name, email, password, organization (optional)</li>
+                    <li>Session Data: Audio recordings, session notes, tasks, and summaries</li>
+                    <li>Device Info: IP address, operating system, browser type, and time zone</li>
+                    <li>Usage Data: Logins, features used, and performance analytics</li>
+                    <li>Payment Data: Securely handled by third-party providers (Stripe, PayPal)</li>
+                </ul>
+                
+                <h3>4. How We Use Your Data</h3>
+                <p>We use your data to:</p>
+                <ul>
+                    <li>Provide, maintain, and improve the app</li>
+                    <li>Generate AI-based session summaries</li>
+                    <li>Enable scheduling and calendar integration</li>
+                    <li>Process payments and manage subscriptions</li>
+                    <li>Communicate with you about your account and updates</li>
+                    <li>Monitor usage to ensure platform security and performance</li>
+                </ul>
+                
+                <h3>5. Data Sharing</h3>
+                <p>We do not sell your personal data. Your information is only shared with:</p>
+                <ul>
+                    <li>Our secure infrastructure partners (hosting, analytics)</li>
+                    <li>Payment processors (Stripe, PayPal)</li>
+                    <li>Gemini AI (strictly for session summary generation)</li>
+                </ul>
+                <p>All data processing is done in accordance with GDPR, CCPA, and other applicable privacy regulations.</p>
+                
+                <h3>6. Data Retention</h3>
+                <p>Audio recordings, session data, and summaries are stored for the duration of your active subscription, or until you request deletion. We offer full data export and deletion options upon request.</p>
+                
+                <h3>7. User Rights</h3>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access the data we store about you</li>
+                    <li>Request correction or deletion of your data</li>
+                    <li>Withdraw consent at any time</li>
+                    <li>Export your data in a structured format</li>
+                </ul>
+                <p>You can manage your privacy settings from your profile page or by contacting us.</p>
+                
+                <h3>8. Children's Privacy</h3>
+                <p>Our app is intended for users aged 18 and older. We do not knowingly collect data from children under 18.</p>
+                
+                <h3>9. Security Measures</h3>
+                <p>We use encryption, access control, and secure servers to protect your data. All AI summaries are generated using encrypted transmission with Gemini APIs.</p>
+                
+                <h3>10. Updates to This Policy</h3>
+                <p>We may update this Privacy Policy to reflect improvements or legal requirements. All changes will be posted in-app and on our website with the updated effective date.</p>
+                
+                <h3>Questions?</h3>
+                <p>Feel free to contact us at: info@thecoachscribe.com</p>
+            </div>
+            <button id="close-privacy-modal" class="mt-6 w-full py-3 px-4 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200">
+                Cerrar
+            </button>
+        </div>
+    </div>
+    
+    <!-- Terms of Service Modal -->
+    <div id="terms-modal" class="modal">
+        <div class="modal-content modal-content-large">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Términos de Servicio</h2>
+            <div class="policy-content">
+                <p><strong>Effective Date:</strong> August 2025</p>
+                <p><strong>Company:</strong> Mobashil Group S.A.</p>
+                <p><strong>Contact:</strong> info@thecoachscribe.com</p>
+                
+                <h3>1. Acceptance of Terms</h3>
+                <p>By accessing or using The Coach Scribe application ("the App"), you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree, you must not use the App.</p>
+                
+                <h3>2. Description of the Service</h3>
+                <p>The Coach Scribe is a coaching assistant platform that allows certified or practicing coaches to manage clients, record sessions, receive AI-generated summaries, assign tasks, track past sessions, and synchronize with their calendar.</p>
+                <p>AI features are powered exclusively by Gemini AI by Google.</p>
+                
+                <h3>3. User Accounts</h3>
+                <p>To use the App, you must:</p>
+                <ul>
+                    <li>Be at least 18 years old</li>
+                    <li>Provide accurate information when registering</li>
+                    <li>Maintain the confidentiality of your login credentials</li>
+                </ul>
+                <p>You are fully responsible for all activity under your account.</p>
+                
+                <h3>4. Subscriptions & Payments</h3>
+                <p>The App offers paid plans (Basic, Pro, Premium) with different features and limitations.</p>
+                <ul>
+                    <li>Payments are securely processed via Stripe or PayPal</li>
+                    <li>Subscriptions renew automatically unless canceled</li>
+                    <li>You may cancel at any time; no refunds are issued for unused time</li>
+                    <li>Downgrading or upgrading plans will adjust features accordingly</li>
+                </ul>
+                
+                <h3>5. AI-Generated Content</h3>
+                <p>The App uses Gemini AI to generate session summaries and related outputs. These summaries are suggestions and not a replacement for clinical, psychological, or legal advice. Coaches are responsible for reviewing, editing, and approving content before sharing it with clients.</p>
+                
+                <h3>6. Acceptable Use</h3>
+                <p>You agree not to:</p>
+                <ul>
+                    <li>Use the app for illegal or harmful purposes</li>
+                    <li>Record or store sessions without client consent</li>
+                    <li>Reverse-engineer, copy, or resell the platform</li>
+                    <li>Interfere with the app's security or operations</li>
+                </ul>
+                <p>Violation of these terms may result in account suspension or termination without notice.</p>
+                
+                <h3>7. Intellectual Property</h3>
+                <p>All rights, title, and interest in the App (including design, content, code, and branding) belong to Mobashil Group S.A. You may not copy or reuse any part of the platform without written permission.</p>
+                
+                <h3>8. Limitation of Liability</h3>
+                <p>The App is provided "as is" without warranties of any kind. Mobashil Group S.A. is not liable for:</p>
+                <ul>
+                    <li>Losses due to reliance on AI-generated summaries</li>
+                    <li>Any indirect or consequential damages</li>
+                    <li>Downtime, bugs, or performance issues beyond our control</li>
+                </ul>
+                
+                <h3>9. Termination</h3>
+                <p>You may stop using the App at any time. We reserve the right to suspend or terminate your account if you violate these terms or misuse the platform.</p>
+                
+                <h3>10. Changes to the Terms</h3>
+                <p>We may update these Terms of Service as needed. If we make significant changes, we will notify you by email or in-app notification. Continued use of the App after changes means you accept the updated terms.</p>
+                
+                <h3>Need Help or Have Questions?</h3>
+                <p>Email us at: info@thecoachscribe.com</p>
+            </div>
+            <button id="close-terms-modal" class="mt-6 w-full py-3 px-4 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200">
+                Cerrar
+            </button>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    
+    <script>
+        // Configuration
+        const TRIAL_MINUTES = 120;
+        const privacyUrl = "https://www.thecoachscribe.com/privacy";
+        const termsUrl = "https://www.thecoachscribe.com/terms";
+        const paymentUrl = "https://www.thecoachscribe.com/checkout";
+        
+        // Google Sheet Configuration
+        // Replace with your actual Google Sheet ID and API endpoint
+        const GOOGLE_SHEET_ID = "YOUR_GOOGLE_SHEET_ID";
+        const GOOGLE_SHEET_API_URL = "https://sheetson-api.com/v1/sheets/YOUR_GOOGLE_SHEET_ID";
+        
+        window.USE_GEMINI = false; // Set to true to use real Gemini integration
+        
+        // App State
+        let currentScreen = 'signin-screen';
+        let currentLanguage = localStorage.getItem('lang') || 'auto';
+        let isActivated = localStorage.getItem('isActivated') === 'true';
+        let trialRemaining = parseInt(localStorage.getItem('trialRemaining')) || TRIAL_MINUTES * 60; // in seconds
+        let retentionDays = localStorage.getItem('retentionDays') || '30';
+        let isRecording = false;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+        let transcriptionInterval = null;
+        let markers = [];
+        let sessionData = null;
+        let isOnline = navigator.onLine;
+        let clients = [
+            { id: 1, name: 'Juan Díaz', email: 'juan.diaz@example.com', phone: '+34 600 123 456', lastSession: '15/05/2023', avatar: 'JD', color: 'indigo' },
+            { id: 2, name: 'María García', email: 'maria.garcia@example.com', phone: '+34 600 789 012', lastSession: '10/05/2023', avatar: 'MG', color: 'pink' },
+            { id: 3, name: 'Pedro López', email: 'pedro.lopez@example.com', phone: '+34 600 345 678', lastSession: '05/05/2023', avatar: 'PL', color: 'green' },
+            { id: 4, name: 'Ana Martínez', email: 'ana.martinez@example.com', phone: '+34 600 901 234', lastSession: '28/04/2023', avatar: 'AM', color: 'yellow' }
+        ];
+        let currentClient = null;
+        let sessions = [
+            { id: 1, clientId: 1, date: '15/05/2023', duration: '45 min', topic: 'Equilibrio vida-trabajo y gestión del tiempo', summary: true },
+            { id: 2, clientId: 1, date: '08/05/2023', duration: '60 min', topic: 'Establecimiento de metas profesionales', summary: true },
+            { id: 3, clientId: 1, date: '01/05/2023', duration: '50 min', topic: 'Identificación de fortalezas y áreas de mejora', summary: true },
+            { id: 4, clientId: 2, date: '10/05/2023', duration: '55 min', topic: 'Desarrollo de liderazgo', summary: true },
+            { id: 5, clientId: 2, date: '03/05/2023', duration: '45 min', topic: 'Comunicación efectiva', summary: true },
+            { id: 6, clientId: 3, date: '05/05/2023', duration: '50 min', topic: 'Gestión del estrés', summary: true },
+            { id: 7, clientId: 4, date: '28/04/2023', duration: '40 min', topic: 'Transición de carrera', summary: true }
+        ];
+        
+        // User State
+        let user = {
+            isLoggedIn: false,
+            email: '',
+            name: '',
+            avatar: ''
+        };
+        
+        // Internationalization
+        const i18n = {
+            en: {
+                "app.title": "The Coach Scribe",
+                "app.subtitle": "Transform your coaching practice with AI-driven insights and emotional understanding for deeper client connections.",
+                "home.trial": "Free trial",
+                "home.newSession": "New session",
+                "home.activationStatus": "Device not activated",
+                "home.activateNow": "Activate now",
+                "home.selectLanguage": "Select language",
+                "consent.title": "Recording consent",
+                "consent.description": "This session will be recorded and transcribed to generate a summary with AI (Gemini). We do not store audio; only text. You can withdraw consent and request deletion.",
+                "consent.legalTitle": "Important legal information",
+                "consent.usLegal": "In some states, two-party consent applies. Make sure you have the consent of all people being recorded.",
+                "consent.euLegal": "Inform purpose and legal basis (consent), and respect rights of access, rectification, deletion and portability. The user can withdraw consent and request deletion.",
+                "consent.dataRetention": "We do not store audio; only text. Text is retained according to the chosen retention (30/90 days).",
+                "consent.legalNote": "This content is informational and does not constitute legal advice.",
+                "consent.privacyPolicy": "Privacy Policy",
+                "consent.terms": "Terms of Service",
+                "consent.confirm": "I agree to be recorded and have the session transcribed to generate an AI summary.",
+                "common.cancel": "Cancel",
+                "common.accept": "Accept",
+                "preparation.title": "Session preparation",
+                "preparation.description": "Before starting, make sure to follow these tips to get the best results:",
+                "preparation.tipsTitle": "Important tips:",
+                "preparation.tip1": "Turn on 'Do Not Disturb' mode on your device",
+                "preparation.tip2": "Make sure you have a good internet connection",
+                "preparation.tip3": "Do not use Airplane mode during the session",
+                "preparation.tip4": "Find a quiet place without background noise",
+                "preparation.ready": "Ready",
+                "recording.recording": "Recording",
+                "recording.online": "Connected",
+                "recording.offline": "Reconnecting...",
+                "recording.inLanguage": "Recording in ",
+                "recording.insight": "Insight",
+                "recording.task": "Task",
+                "recording.goal": "Goal",
+                "recording.endSession": "End session",
+                "summary.title": "Session summary",
+                "summary.poweredBy": "Powered by",
+                "summary.tldr": "Summary",
+                "summary.topics": "Topics",
+                "summary.emotions": "Emotions",
+                "summary.obstacles": "Obstacles",
+                "summary.strengths": "Strengths",
+                "summary.recommendations": "Recommendations",
+                "summary.questions": "Questions to reflect on",
+                "summary.markers": "Markers",
+                "summary.export": "Export",
+                "summary.schedule": "Schedule",
+                "summary.delete": "Delete",
+                "clients.title": "Clients",
+                "clients.searchPlaceholder": "Search client...",
+                "clients.addClient": "Add client",
+                "clientDetail.title": "Client details",
+                "clientDetail.sessionHistory": "Session history",
+                "clientDetail.newSession": "New session",
+                "clientDetail.edit": "Edit",
+                "settings.title": "Settings",
+                "settings.language": "Language",
+                "settings.moreLanguages": "More languages",
+                "settings.privacy": "Privacy",
+                "settings.noAudioStorage": "We do not store audio; only text.",
+                "settings.dataRetention": "Data retention",
+                "settings.30days": "30 days",
+                "settings.90days": "90 days",
+                "settings.activation": "Activation",
+                "settings.changeDevice": "Change device",
+                "settings.legalTitle": "Important legal information",
+                "settings.usLegal": "In some states, two-party consent applies. Make sure you have the consent of all people being recorded.",
+                "settings.euLegal": "Inform purpose and legal basis (consent), and respect rights of access, rectification, deletion and portability. The user can withdraw consent and request deletion.",
+                "settings.dataRetention": "We do not store audio; only text. Text is retained according to the chosen retention (30/90 days).",
+                "settings.legalNote": "This content is informational and does not constitute legal advice.",
+                "settings.privacyPolicy": "Privacy Policy",
+                "settings.terms": "Terms of Service",
+                "nav.home": "Home",
+                "nav.clients": "Clients",
+                "nav.summaries": "Summaries",
+                "nav.settings": "Settings",
+                "languageModal.title": "Select language",
+                "languageModal.auto": "Auto",
+                "activationModal.title": "Activate device",
+                "activationModal.description": "Enter the activation code you received when purchasing your subscription.",
+                "activationModal.placeholder": "XXXX-XXXX-XXXX",
+                "activationModal.activate": "Activate",
+                "trialExpired.title": "Your free trial has ended",
+                "trialExpired.description": "Your 2-hour free trial has ended. To continue using The Coach Scribe, please complete a one-time payment of $49 on our website.",
+                "trialExpired.activate": "Activate device",
+                "trialExpired.buyPlan": "Pay $49 for Lifetime Access",
+                "addClientModal.title": "Add new client",
+                "addClientModal.name": "Name",
+                "addClientModal.email": "Email",
+                "addClientModal.phone": "Phone",
+                "addClientModal.add": "Add"
+            },
+            es: {
+                "app.title": "The Coach Scribe",
+                "app.subtitle": "Transforma tu práctica de coaching con información basada en IA y comprensión emocional para conexiones más profundas con los clientes.",
+                "home.trial": "Trial gratuito",
+                "home.newSession": "Nueva sesión",
+                "home.activationStatus": "Dispositivo no activado",
+                "home.activateNow": "Activar ahora",
+                "home.selectLanguage": "Elegir idioma",
+                "consent.title": "Consentimiento de grabación",
+                "consent.description": "Esta sesión será grabada y transcrita para generar un resumen con IA (Gemini). No almacenamos audio; sólo texto. Podés retirar el consentimiento y solicitar eliminación.",
+                "consent.legalTitle": "Información legal importante",
+                "consent.usLegal": "En algunos estados rige consentimiento de dos partes. Asegurate de contar con el consentimiento de todas las personas grabadas.",
+                "consent.euLegal": "Informá finalidad y base legal (consentimiento), y respetá derechos de acceso, rectificación, supresión y portabilidad. El usuario puede retirar el consentimiento y solicitar eliminación.",
+                "consent.dataRetention": "No almacenamos audio; sólo texto. El texto se conserva según la retención elegida (30/90 días).",
+                "consent.legalNote": "Este contenido es informativo y no constituye asesoramiento legal.",
+                "consent.privacyPolicy": "Política de Privacidad",
+                "consent.terms": "Términos de Servicio",
+                "consent.confirm": "Acepto ser grabado/a y que se transcriba la sesión para generar un resumen con IA.",
+                "common.cancel": "Cancelar",
+                "common.accept": "Aceptar",
+                "preparation.title": "Preparación para la sesión",
+                "preparation.description": "Antes de comenzar, asegúrate de seguir estos consejos para obtener los mejores resultados:",
+                "preparation.tipsTitle": "Consejos importantes:",
+                "preparation.tip1": "Activa el modo 'No Molestar' en tu dispositivo",
+                "preparation.tip2": "Asegúrate de tener una buena conexión a internet",
+                "preparation.tip3": "No uses el Modo Avión durante la sesión",
+                "preparation.tip4": "Busca un lugar tranquilo sin ruidos de fondo",
+                "preparation.ready": "Listo",
+                "recording.recording": "Grabando",
+                "recording.online": "Conectado",
+                "recording.offline": "Reconectando...",
+                "recording.inLanguage": "Grabando en ",
+                "recording.insight": "Insight",
+                "recording.task": "Tarea",
+                "recording.goal": "Meta",
+                "recording.endSession": "Finalizar sesión",
+                "summary.title": "Resumen de la sesión",
+                "summary.poweredBy": "Powered by",
+                "summary.tldr": "Resumen",
+                "summary.topics": "Temas",
+                "summary.emotions": "Emociones",
+                "summary.obstacles": "Obstáculos",
+                "summary.strengths": "Fortalezas",
+                "summary.recommendations": "Recomendaciones",
+                "summary.questions": "Preguntas para reflexionar",
+                "summary.markers": "Marcadores",
+                "summary.export": "Exportar",
+                "summary.schedule": "Agendar",
+                "summary.delete": "Eliminar",
+                "clients.title": "Clientes",
+                "clients.searchPlaceholder": "Buscar cliente...",
+                "clients.addClient": "Agregar cliente",
+                "clientDetail.title": "Detalle del cliente",
+                "clientDetail.sessionHistory": "Historial de sesiones",
+                "clientDetail.newSession": "Nueva sesión",
+                "clientDetail.edit": "Editar",
+                "settings.title": "Ajustes",
+                "settings.language": "Idioma",
+                "settings.moreLanguages": "Más idiomas",
+                "settings.privacy": "Privacidad",
+                "settings.noAudioStorage": "No almacenamos audio; sólo texto.",
+                "settings.dataRetention": "Retención de datos",
+                "settings.30days": "30 días",
+                "settings.90days": "90 días",
+                "settings.activation": "Activación",
+                "settings.changeDevice": "Cambiar dispositivo",
+                "settings.legalTitle": "Información legal importante",
+                "settings.usLegal": "En algunos estados rige consentimiento de dos partes. Asegurate de contar con el consentimiento de todas las personas grabadas.",
+                "settings.euLegal": "Informá finalidad y base legal (consentimiento), y respetá derechos de acceso, rectificación, supresión y portabilidad. El usuario puede retirar el consentimiento y solicitar eliminación.",
+                "settings.dataRetention": "No almacenamos audio; sólo texto. El texto se conserva según la retención elegida (30/90 días).",
+                "settings.legalNote": "Este contenido es informativo y no constituye asesoramiento legal.",
+                "settings.privacyPolicy": "Política de Privacidad",
+                "settings.terms": "Términos de Servicio",
+                "nav.home": "Inicio",
+                "nav.clients": "Clientes",
+                "nav.summaries": "Resúmenes",
+                "nav.settings": "Ajustes",
+                "languageModal.title": "Seleccionar idioma",
+                "languageModal.auto": "Auto",
+                "activationModal.title": "Activar dispositivo",
+                "activationModal.description": "Ingresa el código de activación que recibiste al comprar tu suscripción.",
+                "activationModal.placeholder": "XXXX-XXXX-XXXX",
+                "activationModal.activate": "Activar",
+                "trialExpired.title": "Tu trial ha finalizado",
+                "trialExpired.description": "Tu prueba gratuita de 2 horas ha finalizado. Para continuar usando The Coach Scribe, completa un pago único de $49 en nuestro sitio web.",
+                "trialExpired.activate": "Activar dispositivo",
+                "trialExpired.buyPlan": "Pagar $49 por acceso de por vida",
+                "addClientModal.title": "Agregar nuevo cliente",
+                "addClientModal.name": "Nombre",
+                "addClientModal.email": "Email",
+                "addClientModal.phone": "Teléfono",
+                "addClientModal.add": "Agregar"
+            }
+            // Add other languages as needed...
+        };
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            checkUserLogin();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Set up online/offline detection
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            
+            // Apply translations
+            applyTranslations();
+            
+            // Register service worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
+                    .catch(err => console.log('ServiceWorker registration failed: ', err));
+            }
+        });
+        
+        // Check if user is logged in
+        function checkUserLogin() {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                try {
+                    user = JSON.parse(savedUser);
+                    if (user.isLoggedIn) {
+                        showScreen('home-screen');
+                        updateUserDisplay();
+                        updateActivationStatus();
+                        updateTrialDisplay();
+                        updateLanguageDisplay();
+                        setRetentionPreference();
+                        
+                        // Start trial timer if not activated
+                        if (!isActivated && trialRemaining > 0) {
+                            startTrialTimer();
+                        }
+                    } else {
+                        showScreen('signin-screen');
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                    showScreen('signin-screen');
+                }
+            } else {
+                showScreen('signin-screen');
+            }
+        }
+        
+        // Update user display
+        function updateUserDisplay() {
+            if (user.isLoggedIn) {
+                // Update user info on home screen
+                const userNameEl = document.getElementById('user-name');
+                const userEmailEl = document.getElementById('user-email');
+                const userAvatarEl = document.getElementById('user-avatar');
+                
+                if (userNameEl) userNameEl.textContent = user.name;
+                if (userEmailEl) userEmailEl.textContent = user.email;
+                if (userAvatarEl) userAvatarEl.src = user.avatar || `https://picsum.photos/seed/${user.email}/40/40.jpg`;
+                
+                // Update user info on settings screen
+                const settingsUserNameEl = document.getElementById('settings-user-name');
+                const settingsUserEmailEl = document.getElementById('settings-user-email');
+                const settingsUserAvatarEl = document.getElementById('settings-user-avatar');
+                
+                if (settingsUserNameEl) settingsUserNameEl.textContent = user.name;
+                if (settingsUserEmailEl) settingsUserEmailEl.textContent = user.email;
+                if (settingsUserAvatarEl) settingsUserAvatarEl.src = user.avatar || `https://picsum.photos/seed/${user.email}/40/40.jpg`;
+            }
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Google Sign-In button
+            const googleSigninBtn = document.getElementById('google-signin-btn');
+            if (googleSigninBtn) {
+                googleSigninBtn.addEventListener('click', function() {
+                    handleGoogleSignIn();
+                });
+            }
+            
+            // Sign Out buttons
+            const signoutBtn = document.getElementById('signout-btn');
+            const signoutSettingsBtn = document.getElementById('signout-settings-btn');
+            
+            if (signoutBtn) {
+                signoutBtn.addEventListener('click', function() {
+                    handleSignOut();
+                });
+            }
+            
+            if (signoutSettingsBtn) {
+                signoutSettingsBtn.addEventListener('click', function() {
+                    handleSignOut();
+                });
+            }
+            
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const screenId = this.getAttribute('data-screen');
+                    if (screenId) {
+                        showScreen(screenId);
+                    }
+                });
+            });
+            
+            // Home screen buttons
+            const newSessionBtn = document.getElementById('new-session-btn');
+            const activateBtn = document.getElementById('activate-btn');
+            const languageSelectorBtn = document.getElementById('language-selector-btn');
+            
+            if (newSessionBtn) {
+                newSessionBtn.addEventListener('click', function() {
+                    if (!isActivated && trialRemaining <= 0) {
+                        showModal('trial-expired-modal');
+                    } else {
+                        showScreen('consent-screen');
+                    }
+                });
+            }
+            
+            if (activateBtn) {
+                activateBtn.addEventListener('click', function() {
+                    showModal('activation-modal');
+                });
+            }
+            
+            if (languageSelectorBtn) {
+                languageSelectorBtn.addEventListener('click', function() {
+                    showModal('language-modal');
+                });
+            }
+            
+            // Consent screen buttons
+            const consentCheckbox = document.getElementById('consent-checkbox');
+            const consentCancelBtn = document.getElementById('consent-cancel-btn');
+            const consentAcceptBtn = document.getElementById('consent-accept-btn');
+            
+            if (consentCheckbox) {
+                consentCheckbox.addEventListener('change', function() {
+                    if (consentAcceptBtn) {
+                        consentAcceptBtn.disabled = !this.checked;
+                    }
+                });
+            }
+            
+            if (consentCancelBtn) {
+                consentCancelBtn.addEventListener('click', function() {
+                    showScreen('home-screen');
+                });
+            }
+            
+            if (consentAcceptBtn) {
+                consentAcceptBtn.addEventListener('click', function() {
+                    showScreen('preparation-screen');
+                });
+            }
+            
+            // Privacy and Terms links
+            const privacyLink = document.getElementById('privacy-link');
+            const termsLink = document.getElementById('terms-link');
+            
+            if (privacyLink) {
+                privacyLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal('privacy-modal');
+                });
+            }
+            
+            if (termsLink) {
+                termsLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal('terms-modal');
+                });
+            }
+            
+            // Preparation screen buttons
+            const preparationCancelBtn = document.getElementById('preparation-cancel-btn');
+            const preparationReadyBtn = document.getElementById('preparation-ready-btn');
+            
+            if (preparationCancelBtn) {
+                preparationCancelBtn.addEventListener('click', function() {
+                    showScreen('home-screen');
+                });
+            }
+            
+            if (preparationReadyBtn) {
+                preparationReadyBtn.addEventListener('click', function() {
+                    startRecording();
+                });
+            }
+            
+            // Recording screen buttons
+            const endSessionBtn = document.getElementById('end-session-btn');
+            
+            if (endSessionBtn) {
+                endSessionBtn.addEventListener('click', function() {
+                    endRecording();
+                });
+            }
+            
+            // Marker buttons
+            document.querySelectorAll('.marker-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const markerType = this.getAttribute('data-marker');
+                    addMarker(markerType);
+                });
+            });
+            
+            // Summary screen buttons
+            const exportBtn = document.getElementById('export-btn');
+            const scheduleBtn = document.getElementById('schedule-btn');
+            const deleteBtn = document.getElementById('delete-btn');
+            
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    showToast('Exportando resumen...');
+                    setTimeout(() => {
+                        showToast('Resumen exportado con éxito');
+                    }, 1500);
+                });
+            }
+            
+            if (scheduleBtn) {
+                scheduleBtn.addEventListener('click', function() {
+                    showToast('Agendando próxima sesión...');
+                    setTimeout(() => {
+                        showToast('Sesión agendada con éxito');
+                    }, 1500);
+                });
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    if (confirm('¿Estás seguro de que quieres eliminar esta sesión?')) {
+                        showToast('Sesión eliminada');
+                        showScreen('home-screen');
+                    }
+                });
+            }
+            
+            // Clients screen buttons
+            const addClientBtn = document.getElementById('add-client-btn');
+            
+            if (addClientBtn) {
+                addClientBtn.addEventListener('click', function() {
+                    showModal('add-client-modal');
+                });
+            }
+            
+            // Client items
+            document.querySelectorAll('.client-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const clientId = this.getAttribute('data-client-id');
+                    showClientDetail(clientId);
+                });
+            });
+            
+            // Client detail screen buttons
+            const backToClientsBtn = document.getElementById('back-to-clients-btn');
+            const newSessionClientBtn = document.getElementById('new-session-client-btn');
+            const editClientBtn = document.getElementById('edit-client-btn');
+            
+            if (backToClientsBtn) {
+                backToClientsBtn.addEventListener('click', function() {
+                    showScreen('clients-screen');
+                });
+            }
+            
+            if (newSessionClientBtn) {
+                newSessionClientBtn.addEventListener('click', function() {
+                    if (!isActivated && trialRemaining <= 0) {
+                        showModal('trial-expired-modal');
+                    } else {
+                        showScreen('consent-screen');
+                    }
+                });
+            }
+            
+            if (editClientBtn) {
+                editClientBtn.addEventListener('click', function() {
+                    showToast('Función de edición de cliente no implementada en esta demostración');
+                });
+            }
+            
+            // Session items
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const sessionId = this.getAttribute('data-session-id');
+                    showScreen('summary-screen');
+                    showToast('Viendo resumen de sesión ' + sessionId);
+                });
+            });
+            
+            // Settings screen buttons
+            const settingsLanguageBtn = document.getElementById('settings-language-btn');
+            const settingsActivationBtn = document.getElementById('settings-activation-btn');
+            const settingsPrivacyLink = document.getElementById('settings-privacy-link');
+            const settingsTermsLink = document.getElementById('settings-terms-link');
+            
+            if (settingsLanguageBtn) {
+                settingsLanguageBtn.addEventListener('click', function() {
+                    showModal('language-modal');
+                });
+            }
+            
+            if (settingsActivationBtn) {
+                settingsActivationBtn.addEventListener('click', function() {
+                    showModal('activation-modal');
+                });
+            }
+            
+            if (settingsPrivacyLink) {
+                settingsPrivacyLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal('privacy-modal');
+                });
+            }
+            
+            if (settingsTermsLink) {
+                settingsTermsLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal('terms-modal');
+                });
+            }
+            
+            // Retention radio buttons
+            document.querySelectorAll('input[name="retention"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    retentionDays = this.value;
+                    localStorage.setItem('retentionDays', retentionDays);
+                    showToast(`Período de retención establecido en ${retentionDays} días`);
+                });
+            });
+            
+            // Language modal buttons
+            document.querySelectorAll('.language-option').forEach(button => {
+                button.addEventListener('click', function() {
+                    const lang = this.getAttribute('data-lang');
+                    setLanguage(lang);
+                    hideModal('language-modal');
+                });
+            });
+            
+            const closeLanguageModal = document.getElementById('close-language-modal');
+            if (closeLanguageModal) {
+                closeLanguageModal.addEventListener('click', function() {
+                    hideModal('language-modal');
+                });
+            }
+            
+            // Activation modal buttons
+            const cancelActivation = document.getElementById('cancel-activation');
+            const confirmActivation = document.getElementById('confirm-activation');
+            
+            if (cancelActivation) {
+                cancelActivation.addEventListener('click', function() {
+                    hideModal('activation-modal');
+                });
+            }
+            
+            if (confirmActivation) {
+                confirmActivation.addEventListener('click', function() {
+                    const code = document.getElementById('activation-code').value;
+                    if (code && code.length >= 10) {
+                        validateActivationCode(code);
+                    } else {
+                        showToast('Por favor ingresa un código de activación válido');
+                    }
+                });
+            }
+            
+            // Trial expired modal buttons
+            const activateFromTrial = document.getElementById('activate-from-trial');
+            const buyPlan = document.getElementById('buy-plan');
+            
+            if (activateFromTrial) {
+                activateFromTrial.addEventListener('click', function() {
+                    hideModal('trial-expired-modal');
+                    showModal('activation-modal');
+                });
+            }
+            
+            if (buyPlan) {
+                buyPlan.addEventListener('click', function() {
+                    // Redirect to payment page
+                    window.location.href = paymentUrl;
+                });
+            }
+            
+            // Add client modal buttons
+            const cancelAddClient = document.getElementById('cancel-add-client');
+            const confirmAddClient = document.getElementById('confirm-add-client');
+            
+            if (cancelAddClient) {
+                cancelAddClient.addEventListener('click', function() {
+                    hideModal('add-client-modal');
+                });
+            }
+            
+            if (confirmAddClient) {
+                confirmAddClient.addEventListener('click', function() {
+                    const name = document.getElementById('new-client-name').value;
+                    const email = document.getElementById('new-client-email').value;
+                    const phone = document.getElementById('new-client-phone').value;
+                    
+                    if (name && email) {
+                        addClient(name, email, phone);
+                        hideModal('add-client-modal');
+                    } else {
+                        showToast('Por favor completa los campos obligatorios');
+                    }
+                });
+            }
+            
+            // Privacy and Terms modal buttons
+            const closePrivacyModal = document.getElementById('close-privacy-modal');
+            const closeTermsModal = document.getElementById('close-terms-modal');
+            
+            if (closePrivacyModal) {
+                closePrivacyModal.addEventListener('click', function() {
+                    hideModal('privacy-modal');
+                });
+            }
+            
+            if (closeTermsModal) {
+                closeTermsModal.addEventListener('click', function() {
+                    hideModal('terms-modal');
+                });
+            }
+            
+            // Client search
+            const clientSearch = document.getElementById('client-search');
+            if (clientSearch) {
+                clientSearch.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    filterClients(searchTerm);
+                });
+            }
+        }
+        
+        // Handle Google Sign-In
+        function handleGoogleSignIn() {
+            // Show loading state
+            const signinLoading = document.getElementById('signin-loading');
+            const signinError = document.getElementById('signin-error');
+            const googleSigninBtn = document.getElementById('google-signin-btn');
+            
+            if (signinLoading) signinLoading.classList.remove('hidden');
+            if (signinError) signinError.classList.add('hidden');
+            if (googleSigninBtn) googleSigninBtn.disabled = true;
+            
+            // Simulate Google Sign-In process
+            setTimeout(() => {
+                // In a real implementation, this would use the Google Sign-In API
+                // For demo purposes, we'll simulate a successful sign-in
+                simulateGoogleSignIn();
+            }, 1500);
+        }
+        
+        // Simulate Google Sign-In
+        function simulateGoogleSignIn() {
+            // Simulate a successful sign-in with a demo user
+            const demoUser = {
+                isLoggedIn: true,
+                email: 'coach@example.com',
+                name: 'Coach Demo',
+                avatar: 'https://picsum.photos/seed/coach/40/40.jpg'
+            };
+            
+            // Save user to localStorage
+            localStorage.setItem('user', JSON.stringify(demoUser));
+            user = demoUser;
+            
+            // Update UI
+            updateUserDisplay();
+            
+            // Hide loading state
+            const signinLoading = document.getElementById('signin-loading');
+            const googleSigninBtn = document.getElementById('google-signin-btn');
+            
+            if (signinLoading) signinLoading.classList.add('hidden');
+            if (googleSigninBtn) googleSigninBtn.disabled = false;
+            
+            // Navigate to home screen
+            showScreen('home-screen');
+            
+            // Update other UI elements
+            updateActivationStatus();
+            updateTrialDisplay();
+            updateLanguageDisplay();
+            setRetentionPreference();
+            
+            // Start trial timer if not activated
+            if (!isActivated && trialRemaining > 0) {
+                startTrialTimer();
+            }
+            
+            showToast('Signed in successfully');
+        }
+        
+        // Handle Sign Out
+        function handleSignOut() {
+            // Clear user from localStorage
+            localStorage.removeItem('user');
+            
+            // Reset user state
+            user = {
+                isLoggedIn: false,
+                email: '',
+                name: '',
+                avatar: ''
+            };
+            
+            // Navigate to sign-in screen
+            showScreen('signin-screen');
+            
+            showToast('Signed out successfully');
+        }
+        
+        // Validate activation code with Google Sheet
+        async function validateActivationCode(code) {
+            // Show loading state
+            const activationLoading = document.getElementById('activation-loading');
+            const activationError = document.getElementById('activation-error');
+            const confirmActivation = document.getElementById('confirm-activation');
+            
+            if (activationLoading) activationLoading.classList.remove('hidden');
+            if (activationError) activationError.classList.add('hidden');
+            if (confirmActivation) confirmActivation.disabled = true;
+            
+            try {
+                // In a real implementation, this would make an API call to check the Google Sheet
+                // For demo purposes, we'll simulate the API call
+                const isValid = await simulateGoogleSheetValidation(code, user.email);
+                
+                if (isValid) {
+                    // Activate device
+                    isActivated = true;
+                    localStorage.setItem('isActivated', 'true');
+                    updateActivationStatus();
+                    hideModal('activation-modal');
+                    showToast('Dispositivo activado con éxito');
+                } else {
+                    // Show error
+                    if (activationError) activationError.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error validating activation code:', error);
+                if (activationError) activationError.classList.remove('hidden');
+            } finally {
+                // Hide loading state
+                if (activationLoading) activationLoading.classList.add('hidden');
+                if (confirmActivation) confirmActivation.disabled = false;
+            }
+        }
+        
+        // Simulate Google Sheet validation
+        async function simulateGoogleSheetValidation(code, email) {
+            // In a real implementation, this would make an API call to check the Google Sheet
+            // For demo purposes, we'll simulate a successful validation for specific codes
+            
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // For demo purposes, accept codes that start with "DEMO-" and are not used
+            if (code.startsWith('DEMO-')) {
+                // Check if the code is "used" in our demo system
+                const usedCodes = JSON.parse(localStorage.getItem('usedCodes') || '[]');
+                
+                if (!usedCodes.includes(code)) {
+                    // Mark code as used
+                    usedCodes.push(code);
+                    localStorage.setItem('usedCodes', JSON.stringify(usedCodes));
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Show a specific screen
+        function showScreen(screenId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show the selected screen
+            const screenElement = document.getElementById(screenId);
+            if (screenElement) {
+                screenElement.classList.add('active');
+                currentScreen = screenId;
+            }
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-screen') === screenId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Special handling for recording screen
+            if (screenId === 'recording-screen') {
+                // Reset recording state
+                resetRecordingState();
+            }
+        }
+        
+        // Show a modal
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        // Hide a modal
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+        
+        // Update activation status
+        function updateActivationStatus() {
+            const statusText = document.getElementById('activation-status-text');
+            const settingsStatus = document.getElementById('activation-status');
+            const trialContainer = document.getElementById('trial-container');
+            const activationContainer = document.getElementById('activation-container');
+            
+            if (isActivated) {
+                if (statusText) statusText.textContent = 'Dispositivo activado';
+                if (settingsStatus) settingsStatus.textContent = 'Activado';
+                
+                // Hide trial and activation containers if activated
+                if (trialContainer) trialContainer.style.display = 'none';
+                if (activationContainer) activationContainer.style.display = 'none';
+            } else {
+                if (statusText) statusText.textContent = 'Dispositivo no activado';
+                if (settingsStatus) settingsStatus.textContent = 'No activado';
+                
+                // Show trial and activation containers if not activated
+                if (trialContainer) trialContainer.style.display = 'block';
+                if (activationContainer) activationContainer.style.display = 'block';
+            }
+        }
+        
+        // Update trial display
+        function updateTrialDisplay() {
+            const trialTime = document.getElementById('trial-time');
+            const trialProgress = document.getElementById('trial-progress');
+            
+            if (isActivated) {
+                // Trial is not needed if activated
+                if (trialTime) trialTime.textContent = 'Activado';
+                if (trialProgress) trialProgress.style.width = '100%';
+            } else {
+                const minutes = Math.floor(trialRemaining / 60);
+                if (trialTime) trialTime.textContent = `${minutes} min`;
+                
+                const percentage = (trialRemaining / (TRIAL_MINUTES * 60)) * 100;
+                if (trialProgress) trialProgress.style.width = `${percentage}%`;
+            }
+        }
+        
+        // Start trial timer
+        function startTrialTimer() {
+            const trialTimer = setInterval(() => {
+                if (trialRemaining > 0 && !isActivated) {
+                    trialRemaining--;
+                    localStorage.setItem('trialRemaining', trialRemaining);
+                    updateTrialDisplay();
+                    
+                    if (trialRemaining <= 0) {
+                        clearInterval(trialTimer);
+                        showToast('Tu período de prueba ha finalizado');
+                    }
+                } else {
+                    clearInterval(trialTimer);
+                }
+            }, 1000);
+        }
+        
+        // Update language display
+        function updateLanguageDisplay() {
+            const currentLanguageEl = document.getElementById('current-language');
+            
+            if (currentLanguage === 'auto') {
+                if (currentLanguageEl) currentLanguageEl.textContent = 'Auto (Español)';
+            } else {
+                const languageNames = {
+                    'en': 'English',
+                    'es': 'Español',
+                    'pt': 'Português',
+                    'fr': 'Français',
+                    'it': 'Italiano',
+                    'he': 'עברית',
+                    'ru': 'Русский',
+                    'de': 'Deutsch'
+                };
+                if (currentLanguageEl) currentLanguageEl.textContent = languageNames[currentLanguage] || currentLanguage;
+            }
+        }
+        
+        // Set language
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('lang', lang);
+            updateLanguageDisplay();
+            applyTranslations();
+            showToast(`Idioma cambiado a ${lang === 'auto' ? 'Auto' : lang}`);
+        }
+        
+        // Apply translations
+        function applyTranslations() {
+            const lang = currentLanguage === 'auto' ? 'es' : currentLanguage;
+            const translations = i18n[lang] || i18n['es'];
+            
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[key]) {
+                    element.textContent = translations[key];
+                }
+            });
+            
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                if (translations[key]) {
+                    element.placeholder = translations[key];
+                }
+            });
+        }
+        
+        // Set retention preference
+        function setRetentionPreference() {
+            document.querySelectorAll('input[name="retention"]').forEach(radio => {
+                if (radio.value === retentionDays) {
+                    radio.checked = true;
+                }
+            });
+        }
+        
+        // Start recording
+        function startRecording() {
+            isRecording = true;
+            recordingSeconds = 0;
+            markers = [];
+            
+            showScreen('recording-screen');
+            
+            // Start recording timer
+            recordingTimer = setInterval(updateRecordingTimer, 1000);
+            
+            // Start transcription simulation
+            startTranscriptionSimulation();
+            
+            showToast('Grabación iniciada');
+        }
+        
+        // Update recording timer
+        function updateRecordingTimer() {
+            recordingSeconds++;
+            
+            const hours = Math.floor(recordingSeconds / 3600);
+            const minutes = Math.floor((recordingSeconds % 3600) / 60);
+            const seconds = recordingSeconds % 60;
+            
+            const timerDisplay = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const recordingTimerEl = document.getElementById('recording-timer');
+            if (recordingTimerEl) recordingTimerEl.textContent = timerDisplay;
+            
+            // Update trial time
+            if (!isActivated && trialRemaining > 0) {
+                trialRemaining--;
+                localStorage.setItem('trialRemaining', trialRemaining);
+                updateTrialDisplay();
+                
+                if (trialRemaining <= 0) {
+                    endRecording();
+                    showModal('trial-expired-modal');
+                }
+            }
+        }
+        
+        // Start transcription simulation
+        function startTranscriptionSimulation() {
+            const transcriptionContainer = document.getElementById('transcription-container');
+            if (!transcriptionContainer) return;
+            
+            transcriptionContainer.innerHTML = '';
+            
+            const phrases = [
+                "Hola, bienvenido/a a la sesión de hoy.",
+                "¿Cómo te has sentido desde la última vez que hablamos?",
+                "He estado pensando en lo que comentaste la semana pasada.",
+                "Siento que estoy abrumado/a con tanto trabajo.",
+                "Entiendo que puede ser difícil equilibrar todo.",
+                "Me gustaría encontrar una manera de gestionar mejor mi tiempo.",
+                "Vamos a explorar algunas estrategias que podrían ayudarte.",
+                "¿Qué actividades me dan energía y cuáles me la quitan?",
+                "Creo que necesito establecer límites más claros con mi jefe.",
+                "Eso es un buen primer paso. ¿Cómo crees que podrías hacerlo?",
+                "Podría empezar por no revisar correos después de las 6 PM.",
+                "Excelente idea. ¿Qué más se te ocurre?",
+                "También podría dedicar tiempo específico para mi familia cada fin de semana.",
+                "Suena como un plan sólido. ¿Cómo te sientes al respecto?",
+                "Me siento aliviado/a de tener un plan concreto.",
+                "Eso es genial. Vamos a establecerlo como una meta para esta semana."
+            ];
+            
+            let phraseIndex = 0;
+            
+            transcriptionInterval = setInterval(() => {
+                if (phraseIndex < phrases.length) {
+                    const line = document.createElement('div');
+                    line.className = 'transcription-line';
+                    line.textContent = phrases[phraseIndex];
+                    transcriptionContainer.appendChild(line);
+                    
+                    // Scroll to bottom
+                    transcriptionContainer.scrollTop = transcriptionContainer.scrollHeight;
+                    
+                    phraseIndex++;
+                } else {
+                    clearInterval(transcriptionInterval);
+                }
+            }, 3000);
+        }
+        
+        // Add marker
+        function addMarker(type) {
+            const time = formatTime(recordingSeconds);
+            markers.push({ type, time });
+            
+            // Show notification
+            const markerNames = {
+                'insight': 'Insight',
+                'task': 'Tarea',
+                'goal': 'Meta'
+            };
+            
+            showToast(`${markerNames[type]} agregado en ${time}`);
+            
+            // Update markers in summary
+            updateMarkersInSummary();
+        }
+        
+        // Format time
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Update markers in summary
+        function updateMarkersInSummary() {
+            const markersContainer = document.getElementById('summary-markers');
+            if (!markersContainer) return;
+            
+            markersContainer.innerHTML = '';
+            
+            const markerIcons = {
+                'insight': { icon: 'lightbulb', color: 'blue' },
+                'task': { icon: 'tasks', color: 'green' },
+                'goal': { icon: 'bullseye', color: 'purple' }
+            };
+            
+            const markerNames = {
+                'insight': 'Insight',
+                'task': 'Tarea',
+                'goal': 'Meta'
+            };
+            
+            markers.forEach(marker => {
+                const markerEl = document.createElement('div');
+                markerEl.className = 'flex items-center';
+                
+                const icon = markerIcons[marker.type];
+                markerEl.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-${icon.color}-100 flex items-center justify-center mr-3">
+                        <i class="fas fa-${icon.icon} text-${icon.color}-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-800">${markerNames[marker.type]}</div>
+                        <div class="text-xs text-gray-500">${marker.time}</div>
+                    </div>
+                `;
+                
+                markersContainer.appendChild(markerEl);
+            });
+        }
+        
+        // End recording
+        function endRecording() {
+            isRecording = false;
+            
+            // Clear timers
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+            
+            if (transcriptionInterval) {
+                clearInterval(transcriptionInterval);
+                transcriptionInterval = null;
+            }
+            
+            // Generate summary
+            generateSummary();
+            
+            // Show summary screen
+            showScreen('summary-screen');
+            
+            showToast('Grabación finalizada');
+        }
+        
+        // Reset recording state
+        function resetRecordingState() {
+            const timer = document.getElementById('recording-timer');
+            const container = document.getElementById('transcription-container');
+            
+            if (timer) timer.textContent = '00:00:00';
+            if (container) container.innerHTML = '';
+            markers = [];
+        }
+        
+        // Generate summary
+        function generateSummary() {
+            // Simulate AI processing time
+            showToast('Generando resumen con IA...');
+            
+            setTimeout(() => {
+                // Update summary with simulated data
+                const tldrElement = document.getElementById('summary-tldr');
+                if (tldrElement) {
+                    tldrElement.textContent = 
+                        'El cliente expresó preocupación por su equilibrio entre vida laboral y personal. ' +
+                        'Se identificaron oportunidades para mejorar la gestión del tiempo y establecer límites más claros.';
+                }
+                
+                // Show success message
+                showToast('Resumen generado con éxito');
+            }, 2000);
+        }
+        
+        // Show client detail
+        function showClientDetail(clientId) {
+            const client = clients.find(c => c.id == clientId);
+            if (client) {
+                currentClient = client;
+                
+                // Update client info
+                const nameEl = document.getElementById('client-name');
+                const emailEl = document.getElementById('client-email');
+                const phoneEl = document.getElementById('client-phone');
+                const lastSessionEl = document.getElementById('client-last-session');
+                
+                if (nameEl) nameEl.textContent = client.name;
+                if (emailEl) emailEl.textContent = client.email;
+                if (phoneEl) phoneEl.textContent = client.phone;
+                if (lastSessionEl) lastSessionEl.textContent = client.lastSession;
+                
+                // Update avatar
+                const avatar = document.getElementById('client-avatar');
+                if (avatar) {
+                    avatar.className = `w-16 h-16 rounded-full bg-${client.color}-100 flex items-center justify-center mr-4`;
+                    avatar.innerHTML = `<span class="text-${client.color}-600 font-medium text-xl">${client.avatar}</span>`;
+                }
+                
+                // Update session history
+                updateSessionHistory(clientId);
+                
+                // Show screen
+                showScreen('client-detail-screen');
+            }
+        }
+        
+        // Update session history
+        function updateSessionHistory(clientId) {
+            const sessionHistory = document.getElementById('session-history');
+            if (!sessionHistory) return;
+            
+            sessionHistory.innerHTML = '';
+            
+            const clientSessions = sessions.filter(s => s.clientId == clientId);
+            
+            clientSessions.forEach(session => {
+                const sessionEl = document.createElement('div');
+                sessionEl.className = 'session-item bg-white rounded-lg shadow-sm p-4 cursor-pointer';
+                sessionEl.setAttribute('data-session-id', session.id);
+                
+                sessionEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-medium text-gray-800">Sesión de coaching</h4>
+                        <span class="text-sm text-gray-500">${session.date}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">${session.topic}</p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span>${session.duration}</span>
+                        <i class="fas fa-file-alt ml-4 mr-1"></i>
+                        <span>${session.summary ? 'Resumen disponible' : 'Sin resumen'}</span>
+                    </div>
+                `;
+                
+                sessionEl.addEventListener('click', function() {
+                    const sessionId = this.getAttribute('data-session-id');
+                    showScreen('summary-screen');
+                    showToast('Viendo resumen de sesión ' + sessionId);
+                });
+                
+                sessionHistory.appendChild(sessionEl);
+            });
+        }
+        
+        // Add client
+        function addClient(name, email, phone) {
+            const newId = clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1;
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+            const colors = ['indigo', 'pink', 'green', 'yellow', 'blue', 'purple', 'red', 'teal'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const newClient = {
+                id: newId,
+                name,
+                email,
+                phone,
+                lastSession: 'Nunca',
+                avatar: initials,
+                color
+            };
+            
+            clients.push(newClient);
+            
+            // Add to UI
+            const clientsList = document.getElementById('clients-list');
+            if (!clientsList) return;
+            
+            const clientEl = document.createElement('div');
+            clientEl.className = 'client-item bg-white rounded-lg shadow-sm p-4 flex items-center cursor-pointer';
+            clientEl.setAttribute('data-client-id', newId);
+            
+            clientEl.innerHTML = `
+                <div class="w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center mr-4">
+                    <span class="text-${color}-600 font-medium">${initials}</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-medium text-gray-800">${name}</h3>
+                    <p class="text-sm text-gray-500">Última sesión: Nunca</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            `;
+            
+            clientEl.addEventListener('click', function() {
+                showClientDetail(newId);
+            });
+            
+            clientsList.appendChild(clientEl);
+            
+            // Clear form
+            const nameInput = document.getElementById('new-client-name');
+            const emailInput = document.getElementById('new-client-email');
+            const phoneInput = document.getElementById('new-client-phone');
+            
+            if (nameInput) nameInput.value = '';
+            if (emailInput) emailInput.value = '';
+            if (phoneInput) phoneInput.value = '';
+            
+            showToast('Cliente agregado con éxito');
+        }
+        
+        // Filter clients
+        function filterClients(searchTerm) {
+            const clientItems = document.querySelectorAll('.client-item');
+            
+            clientItems.forEach(item => {
+                const name = item.querySelector('h3').textContent.toLowerCase();
+                if (name.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // Update online status
+        function updateOnlineStatus() {
+            isOnline = navigator.onLine;
+            const indicator = document.getElementById('online-indicator');
+            const statusText = document.getElementById('connection-status');
+            
+            if (indicator && statusText) {
+                if (isOnline) {
+                    indicator.className = 'online-indicator';
+                    statusText.textContent = 'Conectado';
+                } else {
+                    indicator.className = 'offline-indicator';
+                    statusText.textContent = 'Reconectando...';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
