@@ -4,7 +4,7 @@ window.APP_CONFIG = {
   OAUTH_REDIRECT: 'https://mobashilgroup.github.io/the-coach-scribe/auth/callback',
   
   // Autenticación
-  GOOGLE_CLIENT_ID: '',                             // Obtener en Google Cloud Console
+  GOOGLE_CLIENT_ID: '663379765209-nbrd7hb501g31pmqjn8va4gega0ggj5i.apps.googleusercontent.com',                             // Obtener en Google Cloud Console
   
   // Pagos
   PAYPAL_MODE: 'sandbox',                          // Cambiar a 'live' para producción
@@ -32,3 +32,4 @@ window.APP_CONFIG = {
   // Modo de activación: 'tokens' o 'payments'
   activationMode: 'tokens'
 };
+
