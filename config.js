@@ -1,7 +1,34 @@
 window.APP_CONFIG = {
-  API_BASE: 'https://your-api-base-url.com',          // Replace with your actual API base URL
+  // Configuración de API
+  API_BASE: 'https://tu-api-backend.com',          // Reemplazar con tu URL real
   OAUTH_REDIRECT: 'https://mobashilgroup.github.io/the-coach-scribe/auth/callback',
-  GOOGLE_CLIENT_ID: '',                                // Add your Google Client ID if using Google auth
-  PAYPAL_MODE: 'live',                                // 'live' or 'sandbox'
-  PAYPAL_CLIENT_ID: ''                                // Add your PayPal Client ID if using payments
+  
+  // Autenticación
+  GOOGLE_CLIENT_ID: '',                             // Obtener en Google Cloud Console
+  
+  // Pagos
+  PAYPAL_MODE: 'sandbox',                          // Cambiar a 'live' para producción
+  PAYPAL_CLIENT_ID: '',                             // Obtener en PayPal Developer
+  
+  // Planes de suscripción
+  PLANS: {
+    basic: {
+      price: 49,
+      monthlySessions: 20,
+      name: 'Básico'
+    },
+    pro: {
+      price: 99,
+      monthlySessions: 50,
+      name: 'Pro'
+    },
+    premium: {
+      price: 139,
+      monthlySessions: 100,
+      name: 'Premium'
+    }
+  },
+  
+  // Modo de activación: 'tokens' o 'payments'
+  activationMode: 'tokens'
 };
