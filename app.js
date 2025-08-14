@@ -1,4 +1,11 @@
-/* app.js for The Coach Scribe */
+/*
+ * Enhanced frontend logic for The Coach Scribe.
+ *
+ * This script augments the original navigation handlers with calls to
+ * backend APIs for device activation, session management and logout. It
+ * assumes that window.APP_CONFIG.API_BASE is set to the backend base URL.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
   if (!window.APP_CONFIG) {
     console.error('APP_CONFIG missing');
@@ -12,7 +19,7 @@ function initApp() {
   showScreen('signin-screen');
 
   // Set up nav item clicks
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-item').forEach((item) => {
     item.addEventListener('click', () => {
       const target = item.getAttribute('data-screen');
       showScreen(target);
@@ -39,8 +46,8 @@ function initApp() {
     });
   }
 
-  // Plan buttons
-  document.querySelectorAll('[data-plan]').forEach(btn => {
+  // Plan buttons (select plan)
+  document.querySelectorAll('[data-plan]').forEach((btn) => {
     btn.addEventListener('click', () => {
       window.selectedPlan = btn.getAttribute('data-plan');
       showScreen('consent-screen');
@@ -60,20 +67,26 @@ function initApp() {
   // Activate token button
   const activateTokenBtn = document.getElementById('activate-token-btn');
   if (activateTokenBtn) {
-    activateTokenBtn.addEventListener('click', () => {
+    activateTokenBtn.addEventListener('click', async () => {
       const code = document.getElementById('token-input').value.trim();
-      const tokenLists = window.TOKENS || {};
-      let valid = false;
-      Object.keys(tokenLists).forEach(key => {
-        if (tokenLists[key] && tokenLists[key].includes(code)) valid = true;
-      });
       const errorEl = document.getElementById('token-error');
-      if (!valid) {
+      if (!code) {
         errorEl.classList.remove('hidden');
-      } else {
-        errorEl.classList.add('hidden');
-        showToast('C\u00f3digo activado con \u00e9xito');
-        showScreen('home-screen');
+        return;
+      }
+      try {
+        const result = await activateDevice(code);
+        if (result.ok) {
+          errorEl.classList.add('hidden');
+          showToast('Código activado con éxito');
+          // Update plan UI
+          updatePlanInfo(result.data);
+          showScreen('home-screen');
+        } else {
+          errorEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorEl.classList.remove('hidden');
       }
     });
   }
@@ -107,16 +120,47 @@ function initApp() {
   }
   const prepReadyBtn = document.getElementById('preparation-ready-btn');
   if (prepReadyBtn) {
-    prepReadyBtn.addEventListener('click', () => {
-      showScreen('record-screen');
+    prepReadyBtn.addEventListener('click', async () => {
+      // Start a new session on the backend
+      try {
+        const result = await startSession();
+        if (result.ok) {
+          window.currentSessionId = result.data.sessionId;
+          // Update remaining sessions indicator on home screen
+          if (result.data.sessionsRemaining !== undefined) {
+            updatePlanInfo({ sessionsRemaining: result.data.sessionsRemaining });
+          }
+          showScreen('record-screen');
+        } else {
+          showToast(result.error?.message || 'No se pudo iniciar la sesión');
+        }
+      } catch (err) {
+        showToast('Error al iniciar la sesión');
+      }
     });
   }
 
   // Record screen end session
   const endSessionBtn = document.getElementById('end-session-btn');
   if (endSessionBtn) {
-    endSessionBtn.addEventListener('click', () => {
-      showScreen('summary-screen');
+    endSessionBtn.addEventListener('click', async () => {
+      // Finalize the session on the backend
+      try {
+        const result = await finishSession(window.currentSessionId);
+        if (result.ok) {
+          // Display summary in the Summary screen. Use the existing TLDR container.
+          const summary = result.data?.summary || 'Sesión finalizada';
+          const tldrEl = document.getElementById('summary-tldr');
+          if (tldrEl) {
+            tldrEl.textContent = summary;
+          }
+          showScreen('summary-screen');
+        } else {
+          showToast(result.error?.message || 'No se pudo finalizar la sesión');
+        }
+      } catch (err) {
+        showToast('Error al finalizar la sesión');
+      }
     });
   }
 
@@ -135,17 +179,17 @@ function initApp() {
     });
   }
 
-  // Language buttons
+  // Language buttons (placeholder)
   const languageBtn = document.getElementById('language-selector-btn');
   if (languageBtn) {
     languageBtn.addEventListener('click', () => {
-      showToast('Funci\u00f3n de idioma no disponible a\u00fan');
+      showToast('Función de idioma no disponible aún');
     });
   }
   const settingsLangBtn = document.getElementById('settings-language-btn');
   if (settingsLangBtn) {
     settingsLangBtn.addEventListener('click', () => {
-      showToast('Funci\u00f3n de idioma no disponible a\u00fan');
+      showToast('Función de idioma no disponible aún');
     });
   }
 
@@ -158,29 +202,66 @@ function initApp() {
   }
 
   // Sign out button
-  const signOutBtn = document.getElementById('signout-settings-btn') || document.getElementById('signout-btn');
+  const signOutBtn =
+    document.getElementById('signout-settings-btn') ||
+    document.getElementById('signout-btn');
   if (signOutBtn) {
-    signOutBtn.addEventListener('click', () => {
-      showScreen('signin-screen');
+    signOutBtn.addEventListener('click', async () => {
+      try {
+        await logout();
+      } finally {
+        showScreen('signin-screen');
+      }
     });
   }
 }
 
-// Global functions for inline handlers
-window.selectPlan = function(plan) {
-  window.selectedPlan = plan;
-  showScreen('consent-screen');
-};
-window.showTokenActivation = function() {
-  showScreen('token-screen');
-};
-window.showPlans = function() {
-  showScreen('plans-screen');
-};
+// ------------- API calls -------------
 
-// Utility functions
+async function activateDevice(code) {
+  const res = await fetch(`${window.APP_CONFIG.API_BASE}/device/activate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ code }),
+  });
+  return res.json();
+}
+
+async function startSession() {
+  const res = await fetch(`${window.APP_CONFIG.API_BASE}/sessions/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+async function finishSession(sessionId) {
+  const res = await fetch(`${window.APP_CONFIG.API_BASE}/sessions/finish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ sessionId }),
+  });
+  return res.json();
+}
+
+async function logout() {
+  try {
+    await fetch(`${window.APP_CONFIG.API_BASE}/auth/logout`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+  } catch (err) {
+    // ignore errors
+  }
+}
+
+// ------------- UI helpers -------------
+
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(screen => {
+  document.querySelectorAll('.screen').forEach((screen) => {
     screen.classList.remove('active');
   });
   const el = document.getElementById(id);
@@ -197,4 +278,51 @@ function showToast(message) {
   setTimeout(() => {
     document.body.removeChild(toast);
   }, 3000);
+}
+
+/**
+ * Update the plan information UI based on activation or remaining sessions.
+ * Accepts an object { plan, sessionsRemaining } and updates #plan-name,
+ * #plan-sessions, #plan-remaining and progress bar accordingly.
+ */
+function updatePlanInfo(data = {}) {
+  const { plan, sessionsRemaining } = data;
+  // Map plan IDs to user‑friendly names and total sessions
+  const planInfo = {
+    basic: { name: 'Plan Básico', total: 20 },
+    pro: { name: 'Plan Pro', total: 50 },
+    premium: { name: 'Plan Premium', total: 100 },
+  };
+  const planNameEl = document.getElementById('plan-name');
+  const planSessionsEl = document.getElementById('plan-sessions');
+  const planRemainingEl = document.getElementById('plan-remaining');
+  const progressEl = document.getElementById('plan-progress');
+  if (plan && planInfo[plan]) {
+    planNameEl.textContent = planInfo[plan].name;
+    const total = planInfo[plan].total;
+    const remaining =
+      sessionsRemaining !== undefined ? sessionsRemaining : total;
+    planSessionsEl.textContent = `${total - remaining}/${total} sesiones`;
+    planRemainingEl.textContent = `${remaining} sesiones restantes`;
+    const percent = ((total - remaining) / total) * 100;
+    progressEl.style.width = `${percent}%`;
+    // Show plan info container and hide activation container
+    document.getElementById('plan-info').classList.remove('hidden');
+    document.getElementById('activation-container').classList.add('hidden');
+  } else if (sessionsRemaining !== undefined) {
+    // Only update remaining sessions if plan already shown
+    const displayedPlan = planNameEl.textContent
+      .trim()
+      .toLowerCase();
+    const total = Object.values(planInfo).find(
+      (p) => p.name.toLowerCase() === displayedPlan,
+    )?.total;
+    if (total) {
+      const remaining = sessionsRemaining;
+      planSessionsEl.textContent = `${total - remaining}/${total} sesiones`;
+      planRemainingEl.textContent = `${remaining} sesiones restantes`;
+      const percent = ((total - remaining) / total) * 100;
+      progressEl.style.width = `${percent}%`;
+    }
+  }
 }
