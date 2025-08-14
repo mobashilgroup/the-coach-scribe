@@ -8,7 +8,7 @@ window.APP_CONFIG = {
 
   // Pagos
   PAYPAL_MODE: 'sandbox', // Cambiar a 'live' para producción
-  PAYPAL_CLIENT_ID: '', // Obtener en PayPal Developer
+  PAYPAL_CLIENT_ID: 'AfmU4IFTeIx5yuX15EqEM5Clhgq6-Yiywe-2npsbGDo8JupG6YZnQSQpmg-21DAsYGAAaLyLXMUAv261', // Obtener en PayPal Developer
 
   // Planes de suscripción
   PLANS: {
