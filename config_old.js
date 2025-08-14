@@ -32,4 +32,5 @@ window.APP_CONFIG = {
 
   // Modo de activación: 'tokens' o 'payments'
   activationMode: 'tokens'
-};
+}
+  ;
