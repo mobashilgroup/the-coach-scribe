@@ -7,6 +7,7 @@ const urlsToCache = [
   './tokens.js',
   './app.js',
   './assets/styles.css'
+  
 ];
 
 self.addEventListener('install', event => {
@@ -24,3 +25,4 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
