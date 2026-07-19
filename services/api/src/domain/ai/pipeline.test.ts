@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createAnalysisProvider, createTranscriptionProvider } from "./providers/index.js";
-import { mapDeepgramResponse } from "./providers/deepgram.js";
+import { mapDeepgramWords } from "./providers/deepgram.js";
 import { safeJsonParse } from "./providers/openai.js";
 import { runAnalysis, runFullPipeline, transcriptToText } from "./pipeline.js";
 
@@ -45,16 +45,16 @@ describe("transcriptToText", () => {
   });
 });
 
-describe("deepgram response mapping", () => {
-  it("groups words into per-speaker segments", () => {
-    const result = mapDeepgramResponse({
-      detected_language: "en",
-      words: [
+describe("deepgram word mapping", () => {
+  it("groups diarized words into per-speaker segments", () => {
+    const result = mapDeepgramWords(
+      [
         { word: "how", start: 0, end: 0.4, confidence: 0.99, speaker: 0 },
         { word: "are", start: 0.4, end: 0.7, confidence: 0.98, speaker: 0 },
         { word: "good", start: 1.0, end: 1.4, confidence: 0.8, speaker: 1 },
       ],
-    });
+      "en",
+    );
     expect(result.segments).toHaveLength(2);
     expect(result.segments[0]!.speakerLabel).toBe("Coach");
     expect(result.segments[0]!.text).toBe("how are");
