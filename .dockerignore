@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/.storage
+**/coverage
+.git
+.env
+.env.*
+!.env.example
+apps/web_portal/verification/*.png
+apps/public_website/*.png
+legacy

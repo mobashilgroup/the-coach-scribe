@@ -59,3 +59,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   portal loop; and a **browser (Playwright) verification** of the Fase 2 flow
   asserting the "never auto-sent" and "transcript-never-shared" guarantees.
 - Test suite now **58 passing**.
+
+### Go-live preparation
+
+- **Live AI adapters**: real Deepgram (STT+diarization) + OpenAI (analysis +
+  reply drafts) HTTP behind the interfaces, injectable `fetch`, unit-tested;
+  fakes stay default until keys are set.
+- **Retention worker** (`pnpm worker`): schedules audio deletion on processing
+  and executes due audio/transcript deletion with audit; live-DB test.
+- **Google OAuth** sign-in (authorization-code flow) + **email** delivery
+  (SendGrid adapter, no-op default) — key-guarded.
+- **Appointments** CRUD; minimal **admin console** (overview, plan manager, job
+  monitor, feature flags, usage) gated by `ADMIN_EMAILS`.
+- **Public marketing landing** (`apps/public_website`).
+- **Deployment**: `infra/docker/Dockerfile`, `docker-compose.prod.yml`,
+  `.dockerignore`, and deployment docs (go-live checklist, env-var table,
+  production/staging guides, failure runbook, backup/restore plan).
+- New Appointment + Setting models (migrations). Test suite **77 passing**.

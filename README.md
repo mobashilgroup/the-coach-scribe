@@ -60,10 +60,31 @@ coach shares → invites client (magic link) → client opens portal
 - In-app notifications; coach Messages UI + standalone `portal.html`.
 - Verified in Chromium (`apps/web_portal/verification/verify-portal.mjs`).
 
-### What's next
-- Dedicated AI worker + BullMQ queue, retention worker, Google OAuth, appointments.
-- Admin console + public site; hardening (rate limiting, at-rest encryption, RS256).
-- Payment gateway (Stripe or alternative) — deferred pending the owner's account.
+### Go-live preparation (done — activates with keys)
+The remaining production plumbing is built and key-guarded, so switching it on is
+a config change, not new code:
+
+- **Live AI adapters** — real Deepgram (STT+diarization) and OpenAI (analysis +
+  reply drafts) behind the provider interfaces; `fetch` injectable and unit-tested.
+- **Retention worker** — schedules + executes audio/transcript deletion (`pnpm worker`).
+- **Google OAuth sign-in**, **email** (SendGrid adapter), notifications — guarded.
+- **Appointments** CRUD; **admin console** (plans, feature flags, jobs, usage).
+- **Public marketing site** (`apps/public_website`).
+- **Deployment**: Dockerfile + `docker-compose.prod.yml`, and full docs —
+  [go-live checklist](docs/deployment/go-live-checklist.md),
+  [env vars](docs/deployment/env-vars.md),
+  [production](docs/deployment/production.md),
+  [runbook](docs/deployment/runbook.md),
+  [backup/restore](docs/deployment/backup-restore.md).
+- **77 tests passing** (unit + live-DB E2E across every vertical).
+
+**What still needs the owner:** provider credentials/keys (see the go-live
+checklist), and the **payment gateway** decision — deferred by request; the plans
+engine, subscriptions, and usage ledger are already in place to gate access.
+
+### Later milestones
+- BullMQ async processing at scale; RS256 JWTs, rate limiting, at-rest encryption.
+- Google Calendar/Drive sync; WhatsApp channel.
 - Flutter mobile app with resilient native chunked recording.
 
 ## Layout
