@@ -1,0 +1,523 @@
+// The Coach Scribe — data model (Master Spec §16).
+// Every tenant-scoped row carries organizationId; access is filtered by
+// organization + coach permission in the service layer (Spec §16.2).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & tenancy
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  active
+  suspended
+  invited
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  oauthProvider   String?
+  oauthSubject    String?
+  firstName       String
+  lastName        String?
+  locale          String    @default("en")
+  timezone        String    @default("UTC")
+  country         String?
+  status          UserStatus @default(active)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships   Membership[]
+  coachProfile  CoachProfile?
+  ownedOrgs     Organization[] @relation("OrgOwner")
+
+  @@index([oauthProvider, oauthSubject])
+}
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  ownerUserId     String
+  owner           User     @relation("OrgOwner", fields: [ownerUserId], references: [id])
+  planId          String?
+  plan            Plan?    @relation(fields: [planId], references: [id])
+  brandSettings   Json     @default("{}")
+  retentionPolicy Json     @default("{}")
+  createdAt       DateTime @default(now())
+
+  memberships   Membership[]
+  clients       Client[]
+  sessions      Session[]
+  subscriptions Subscription[]
+  usage         UsageLedger[]
+  auditLogs     AuditLog[]
+}
+
+enum MembershipRole {
+  owner
+  admin
+  coach
+  support
+}
+
+enum MembershipStatus {
+  active
+  invited
+  disabled
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  role           MembershipRole   @default(coach)
+  status         MembershipStatus @default(active)
+  createdAt      DateTime         @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model CoachProfile {
+  userId          String  @id
+  user            User    @relation(fields: [userId], references: [id])
+  displayName     String?
+  photoUrl        String?
+  bio             String?
+  specialties     String[]
+  languages       String[]
+  publicPageSlug  String? @unique
+  bookingSettings Json    @default("{}")
+  paymentSettings Json    @default("{}")
+}
+
+// ---------------------------------------------------------------------------
+// Clients
+// ---------------------------------------------------------------------------
+
+enum PortalStatus {
+  none
+  invited
+  active
+  revoked
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  primaryCoachId String
+  firstName      String
+  lastName       String?
+  email          String?
+  phone          String?
+  locale         String?
+  timezone       String?
+  country        String?
+  pronouns       String?
+  tags           String[]
+  goalSummary    String?
+  privateNotes   String?
+  portalStatus   PortalStatus @default(none)
+  startedAt      DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  sessions    Session[]
+  links       CoachClientLink[]
+  consents    Consent[]
+  actionItems ActionItem[]
+  goals       Goal[]
+  messages    ClientMessage[]
+
+  @@index([organizationId, primaryCoachId])
+  @@index([organizationId, archivedAt])
+}
+
+model CoachClientLink {
+  id          String @id @default(cuid())
+  coachId     String
+  clientId    String
+  client      Client @relation(fields: [clientId], references: [id])
+  permissions Json   @default("{}")
+  status      String @default("active")
+
+  @@unique([coachId, clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Consent (Spec §10.11)
+// ---------------------------------------------------------------------------
+
+model Consent {
+  id                 String    @id @default(cuid())
+  clientId           String
+  client             Client    @relation(fields: [clientId], references: [id])
+  sessionId          String?
+  consentType        String    @default("recording")
+  consentTextVersion String
+  acceptedAt         DateTime?
+  acceptedBy         String
+  method             String    @default("coach_checkbox")
+  evidenceUrl        String?
+  ip                 String?
+  device             String?
+  revokedAt          DateTime?
+  metadata           Json      @default("{}")
+  createdAt          DateTime  @default(now())
+
+  @@index([clientId])
+  @@index([sessionId])
+}
+
+// ---------------------------------------------------------------------------
+// Sessions (Spec §16, §17.1)
+// ---------------------------------------------------------------------------
+
+enum SessionStatus {
+  draft
+  consent_pending
+  consented
+  recording
+  uploading
+  uploaded
+  transcribing
+  transcription_ready
+  summarizing
+  review_required
+  approved
+  shared
+  archived
+  failed_upload
+  failed_transcription
+  failed_summary
+  cancelled
+  deleted
+}
+
+enum InputMethod {
+  record_audio
+  upload_audio
+  upload_video
+  upload_document
+  photo
+  free_text
+}
+
+model Session {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  coachId        String
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  title          String?
+  sessionType    String?
+  inputMethod    InputMethod
+  languageSpoken String?
+  outputLanguage String        @default("en")
+  freeText       String?
+  startedAt      DateTime?
+  endedAt        DateTime?
+  durationSeconds Int?
+  status         SessionStatus @default(draft)
+  consentId      String?
+  sharedAt       DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  files       SessionFile[]
+  segments    TranscriptSegment[]
+  speakers    Speaker[]
+  markers     Marker[]
+  summaries   Summary[]
+  actionItems ActionItem[]
+  goals       Goal[]
+
+  @@index([organizationId, coachId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model SessionFile {
+  id               String    @id @default(cuid())
+  sessionId        String
+  session          Session   @relation(fields: [sessionId], references: [id])
+  kind             String
+  storageKey       String
+  mimeType         String
+  size             Int
+  checksum         String?
+  encrypted        Boolean   @default(true)
+  retentionDeleteAt DateTime?
+  status           String    @default("pending")
+  createdAt        DateTime  @default(now())
+
+  @@index([sessionId])
+}
+
+model TranscriptSegment {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+  speakerId String?
+  startMs   Int
+  endMs     Int
+  text      String
+  confidence Float?
+  edited    Boolean @default(false)
+
+  @@index([sessionId, startMs])
+}
+
+model Speaker {
+  id                  String  @id @default(cuid())
+  sessionId           String
+  session             Session @relation(fields: [sessionId], references: [id])
+  label               String
+  linkedUserOrClientId String?
+  confidence          Float?
+
+  @@index([sessionId])
+}
+
+enum MarkerType {
+  insight
+  task
+  goal
+  custom
+}
+
+model Marker {
+  id          String     @id @default(cuid())
+  sessionId   String
+  session     Session    @relation(fields: [sessionId], references: [id])
+  type        MarkerType
+  timestampMs Int
+  note        String?
+  createdBy   String
+
+  @@index([sessionId])
+}
+
+enum SummaryStatus {
+  draft
+  review_required
+  approved
+  rejected
+}
+
+model Summary {
+  id            String        @id @default(cuid())
+  sessionId     String
+  session       Session       @relation(fields: [sessionId], references: [id])
+  version       Int           @default(1)
+  schemaVersion String        @default("1")
+  contentJson   Json
+  status        SummaryStatus @default(review_required)
+  modelProvider String?
+  modelName     String?
+  promptVersion String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@unique([sessionId, version])
+  @@index([sessionId])
+}
+
+// ---------------------------------------------------------------------------
+// Tasks & goals
+// ---------------------------------------------------------------------------
+
+enum OwnerType {
+  coach
+  client
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  skipped
+  cancelled
+}
+
+enum Visibility {
+  private
+  shared
+}
+
+model ActionItem {
+  id               String     @id @default(cuid())
+  sessionId        String?
+  session          Session?   @relation(fields: [sessionId], references: [id])
+  clientId         String
+  client           Client     @relation(fields: [clientId], references: [id])
+  title            String
+  description      String?
+  ownerType        OwnerType  @default(client)
+  ownerId          String?
+  dueAt            DateTime?
+  priority         String     @default("normal")
+  status           TaskStatus @default(pending)
+  visibility       Visibility @default(private)
+  sourceTimestampMs Int?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([clientId, status])
+}
+
+enum GoalStatus {
+  active
+  achieved
+  paused
+  dropped
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  clientId    String
+  client      Client     @relation(fields: [clientId], references: [id])
+  sessionId   String?
+  session     Session?   @relation(fields: [sessionId], references: [id])
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      GoalStatus @default(active)
+  progress    Int        @default(0)
+  visibility  Visibility @default(private)
+  createdAt   DateTime   @default(now())
+
+  @@index([clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Client messages & AI reply drafts (Fase 2 tables, present in schema)
+// ---------------------------------------------------------------------------
+
+model ClientMessage {
+  id           String   @id @default(cuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id])
+  coachId      String
+  body         String
+  urgent       Boolean  @default(false)
+  attachmentId String?
+  status       String   @default("submitted")
+  sentAt       DateTime @default(now())
+  readAt       DateTime?
+
+  drafts AiReplyDraft[]
+
+  @@index([clientId])
+  @@index([coachId, status])
+}
+
+model AiReplyDraft {
+  id               String        @id @default(cuid())
+  clientMessageId  String
+  clientMessage    ClientMessage @relation(fields: [clientMessageId], references: [id])
+  contextSessionIds String[]
+  draftBody        String
+  status           String        @default("ai_draft_ready")
+  model            String?
+  reviewedBy       String?
+  sentMessageId    String?
+  createdAt        DateTime      @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Billing (plans engine — Spec §13)
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  publicName      String
+  price           Int      @default(0)
+  currency        String   @default("USD")
+  billingInterval String   @default("month")
+  limitsJson      Json     @default("{}")
+  featuresJson    Json     @default("{}")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  organizations Organization[]
+  subscriptions Subscription[]
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  paused
+  cancelled
+  expired
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  organizationId        String
+  organization          Organization       @relation(fields: [organizationId], references: [id])
+  planId                String
+  plan                  Plan               @relation(fields: [planId], references: [id])
+  provider              String             @default("stripe")
+  providerSubscriptionId String?
+  status                SubscriptionStatus @default(trialing)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+
+  @@index([organizationId])
+}
+
+model UsageLedger {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  metric         String
+  quantity       Int
+  sessionId      String?
+  period         String
+  reason         String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, metric, period])
+}
+
+// ---------------------------------------------------------------------------
+// Audit (Spec §24.6) — never stores sensitive session content
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  actorId        String?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  action         String
+  resourceType   String
+  resourceId     String?
+  metadata       Json         @default("{}")
+  ip             String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}

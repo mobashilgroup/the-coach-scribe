@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env / secrets — NEVER commit real values
+.env
+.env.*
+!.env.example
+
+# Prisma
+services/api/prisma/*.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage / test
+coverage/
+.vitest/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Flutter (future milestone)
+apps/mobile_flutter/.dart_tool/
+apps/mobile_flutter/build/
+apps/mobile_flutter/.flutter-plugins*

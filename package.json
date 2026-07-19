@@ -1,0 +1,18 @@
+{
+  "name": "the-coach-scribe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Coach Scribe — AI documentation assistant for coaches. Production monorepo.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "pnpm -r --filter \"./services/**\" --filter \"./packages/**\" build",
+    "test": "pnpm -r --filter \"./services/**\" --filter \"./packages/**\" test",
+    "typecheck": "pnpm -r --filter \"./services/**\" --filter \"./packages/**\" typecheck",
+    "api:dev": "pnpm --filter @tcs/api dev",
+    "api:test": "pnpm --filter @tcs/api test"
+  }
+}

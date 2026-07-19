@@ -1,0 +1,33 @@
+# Local development dependencies for The Coach Scribe.
+# Brings up PostgreSQL + Redis. The API and workers run on the host (pnpm dev).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tcs-postgres
+    environment:
+      POSTGRES_USER: tcs
+      POSTGRES_PASSWORD: tcs
+      POSTGRES_DB: tcs
+    ports:
+      - "5432:5432"
+    volumes:
+      - tcs_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tcs"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tcs-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tcs_pg:

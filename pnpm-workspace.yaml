@@ -1,0 +1,4 @@
+# Workspace globs. New surfaces (apps/web_portal, apps/admin_console,
+# apps/public_website, services/ai_worker, packages/*) join here as they are built.
+packages:
+  - "services/*"
