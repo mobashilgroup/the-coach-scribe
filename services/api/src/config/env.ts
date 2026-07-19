@@ -19,10 +19,12 @@ const EnvSchema = z.object({
   JWT_ACCESS_TTL: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL: z.coerce.number().int().positive().default(2_592_000),
 
-  TRANSCRIPTION_PROVIDER: z.enum(["fake", "deepgram"]).default("fake"),
+  TRANSCRIPTION_PROVIDER: z.enum(["fake", "deepgram", "assemblyai"]).default("fake"),
   ANALYSIS_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
   DEEPGRAM_API_KEY: z.string().optional(),
   DEEPGRAM_MODEL: z.string().default("nova-2"),
+  ASSEMBLYAI_API_KEY: z.string().optional(),
+  ASSEMBLYAI_MODEL: z.string().default("best"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o"),
 
@@ -74,6 +76,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   // Guard: real providers require their keys.
   if (parsed.data.TRANSCRIPTION_PROVIDER === "deepgram" && !parsed.data.DEEPGRAM_API_KEY) {
     throw new Error("TRANSCRIPTION_PROVIDER=deepgram requires DEEPGRAM_API_KEY");
+  }
+  if (parsed.data.TRANSCRIPTION_PROVIDER === "assemblyai" && !parsed.data.ASSEMBLYAI_API_KEY) {
+    throw new Error("TRANSCRIPTION_PROVIDER=assemblyai requires ASSEMBLYAI_API_KEY");
   }
   if (parsed.data.ANALYSIS_PROVIDER === "openai" && !parsed.data.OPENAI_API_KEY) {
     throw new Error("ANALYSIS_PROVIDER=openai requires OPENAI_API_KEY");

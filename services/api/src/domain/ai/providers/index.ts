@@ -6,14 +6,17 @@
 
 import { FakeAnalysisProvider, FakeTranscriptionProvider } from "./fake.js";
 import { DeepgramTranscriptionProvider } from "./deepgram.js";
+import { AssemblyAITranscriptionProvider } from "./assemblyai.js";
 import { OpenAIAnalysisProvider } from "./openai.js";
 import type { AnalysisProvider, TranscriptionProvider } from "./types.js";
 
 export interface ProviderConfig {
-  transcription: "fake" | "deepgram";
+  transcription: "fake" | "deepgram" | "assemblyai";
   analysis: "fake" | "openai";
   deepgramApiKey?: string;
   deepgramModel?: string;
+  assemblyaiApiKey?: string;
+  assemblyaiModel?: string;
   openaiApiKey?: string;
   openaiModel?: string;
 }
@@ -24,6 +27,11 @@ export function createTranscriptionProvider(config: ProviderConfig): Transcripti
       return new DeepgramTranscriptionProvider({
         apiKey: config.deepgramApiKey ?? "",
         model: config.deepgramModel ?? "nova-2",
+      });
+    case "assemblyai":
+      return new AssemblyAITranscriptionProvider({
+        apiKey: config.assemblyaiApiKey ?? "",
+        model: config.assemblyaiModel ?? "best",
       });
     case "fake":
     default:

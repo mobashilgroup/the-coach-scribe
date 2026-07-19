@@ -54,6 +54,8 @@ export class SessionService {
       analysis: env.ANALYSIS_PROVIDER,
       deepgramApiKey: env.DEEPGRAM_API_KEY,
       deepgramModel: env.DEEPGRAM_MODEL,
+      assemblyaiApiKey: env.ASSEMBLYAI_API_KEY,
+      assemblyaiModel: env.ASSEMBLYAI_MODEL,
       openaiApiKey: env.OPENAI_API_KEY,
       openaiModel: env.OPENAI_MODEL,
     };

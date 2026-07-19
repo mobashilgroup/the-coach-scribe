@@ -24,8 +24,17 @@ Concrete providers implement `TranscriptionProvider` / `AnalysisProvider`
 (`src/domain/ai/providers/types.ts`). Callers only ever see the interface; the
 factory (`providers/index.ts`) picks the implementation from config. A
 deterministic **fake** provider runs the whole pipeline with no keys — the
-default in dev and tests. Real adapters (`deepgram.ts`, `openai.ts`) isolate the
-network call so it can be mocked and wired once keys are provisioned.
+default in dev and tests.
+
+| Role | Options (`*_PROVIDER`) | Notes |
+|---|---|---|
+| Transcription + diarization | `fake` · `deepgram` · `assemblyai` | Deepgram is synchronous; AssemblyAI submits then polls until complete. Both need a reachable (signed) audio URL. |
+| Analysis + reply drafts | `fake` · `openai` | JSON-mode summaries; plain-text reply drafts. |
+
+All live adapters (`deepgram.ts`, `assemblyai.ts`, `openai.ts`) take an
+injectable `fetch`, so request shaping and response mapping are unit-tested with
+no key or network. Swapping providers is an env change — e.g.
+`TRANSCRIPTION_PROVIDER=assemblyai` + `ASSEMBLYAI_API_KEY` — with no code change.
 
 ## Schema & repair (§14.3, §14.4)
 The analysis output must satisfy `SummarySchema` (versioned,
