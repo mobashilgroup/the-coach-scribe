@@ -167,4 +167,78 @@ d("end-to-end coach flow", () => {
     expect(still.statusCode).toBe(200);
     expect(still.json().session.status).toBe("draft");
   });
+
+  it("runs the recording path: consent → chunked upload → transcribe+diarize → approve → export", async () => {
+    const reg = await post("/v1/auth/register", {
+      email: `rec_${Date.now()}@example.com`,
+      password: "supersecret",
+      firstName: "Rec",
+      acceptedTerms: true,
+    });
+    const token = reg.json().accessToken as string;
+    const clientId = (await post("/v1/clients", { firstName: "Sam" }, token)).json().client.id as string;
+
+    // Audio session (a recording method → consent is mandatory before processing).
+    const sess = await post(
+      "/v1/sessions",
+      { clientId, inputMethod: "upload_audio", title: "Weekly check-in", durationSeconds: 1500 },
+      token,
+    );
+    const sessionId = sess.json().session.id as string;
+
+    // Processing without consent is forbidden.
+    // (draft → consented first, then upload, then process.)
+    const consent = await post(`/v1/sessions/${sessionId}/consent`, { confirmed: true }, token);
+    expect(consent.statusCode).toBe(200);
+    expect(consent.json().session.status).toBe("consented");
+
+    // Resumable chunked upload of a small fake audio payload.
+    const init = await post(
+      `/v1/sessions/${sessionId}/upload/init`,
+      { fileName: "session.m4a", mimeType: "audio/mp4", totalSize: 6, totalChunks: 2 },
+      token,
+    );
+    expect(init.statusCode).toBe(201);
+    const uploadId = init.json().uploadId as string;
+
+    for (const [i, part] of [Buffer.from("abc"), Buffer.from("def")].entries()) {
+      const res = await app.inject({
+        method: "PUT",
+        url: `/v1/sessions/${sessionId}/upload/${uploadId}/chunk/${i}`,
+        payload: part,
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/octet-stream" },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+    const complete = await post(
+      `/v1/sessions/${sessionId}/upload/${uploadId}/complete`,
+      { totalChunks: 2, fileName: "session.m4a" },
+      token,
+    );
+    expect(complete.statusCode).toBe(200);
+    expect(complete.json().session.status).toBe("uploaded");
+    expect(complete.json().file.status).toBe("stored");
+
+    // Process → transcription + diarization + summary.
+    const processRes = await post(`/v1/sessions/${sessionId}/process`, {}, token);
+    expect(processRes.statusCode).toBe(200);
+    expect(processRes.json().session.status).toBe("review_required");
+
+    const detail = await get(`/v1/sessions/${sessionId}`, token);
+    expect(detail.json().transcript.length).toBeGreaterThan(0); // diarized segments
+    const speakerLabels = detail.json().speakers.map((s: { label: string }) => s.label);
+    expect(speakerLabels).toContain("Client");
+
+    // Approve then export.
+    await post(`/v1/sessions/${sessionId}/summary/approve`, {}, token);
+    const exportJson = await get(`/v1/sessions/${sessionId}/export?format=json`, token);
+    expect(exportJson.statusCode).toBe(200);
+    expect(exportJson.json().summary.summary.length).toBeGreaterThan(0);
+    expect(exportJson.json().confidentiality).toMatch(/confidential/i);
+
+    const exportHtml = await get(`/v1/sessions/${sessionId}/export?format=html`, token);
+    expect(exportHtml.statusCode).toBe(200);
+    expect(exportHtml.headers["content-type"]).toMatch(/text\/html/);
+    expect(exportHtml.body).toMatch(/Executive summary/);
+  });
 });

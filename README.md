@@ -28,16 +28,26 @@ tested end-to-end. Delivered:
 - **51 passing tests**, including a live-database E2E covering the mandatory
   flow and cross-tenant isolation.
 
+Since then the workflow has been completed and **verified end to end in a real
+browser** through a functional coach web console (`apps/web_portal`):
+
 ```
-register → client → session → consent → process (transcribe+analyze)
-        → review_required → approve → share      ✔ verified end-to-end
+register → add client → new session (free text OR audio upload)
+        → recording consent → process (transcribe + diarize + AI summary)
+        → review & edit → approve → share → history → export (JSON / HTML)
 ```
 
+- **Resumable chunked upload** + storage interface (Spec §10.14, §15.1).
+- **Export**: JSON + branded printable HTML (Spec §10.22).
+- **Coach web console** — black/white/gold, no build step, no fake buttons;
+  every action hits the real API. Screenshots of the verified run live in
+  [`apps/web_portal/verification/`](apps/web_portal/verification/).
+- **52 passing tests** (unit + live-DB E2E incl. the audio recording path).
+
 ### What's next
-- Milestone 1 follow-up: dedicated AI worker + BullMQ queue, uploads
-  (init/chunk/complete), retention worker, Stripe billing, Google OAuth.
-- Milestone 2: coach web app, admin console, public site (Next.js).
-- Milestone 3: Flutter mobile app with resilient chunked recording.
+- Dedicated AI worker + BullMQ queue, retention worker, Stripe billing, Google OAuth.
+- Admin console + public site; hardening (rate limiting, at-rest encryption, RS256).
+- Flutter mobile app with resilient native chunked recording.
 
 ## Layout
 

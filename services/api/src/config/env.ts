@@ -31,6 +31,12 @@ const EnvSchema = z.object({
   MAX_SESSION_MINUTES: z.coerce.number().int().positive().default(60),
 
   CONSENT_TEXT_VERSION: z.string().default("v1"),
+
+  // Local object storage base dir (dev). Production uses S3-compatible config.
+  STORAGE_DIR: z.string().default(".storage"),
+
+  // Optional path to a built coach web app to serve as static files.
+  WEB_DIST_DIR: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
