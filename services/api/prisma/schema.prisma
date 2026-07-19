@@ -478,6 +478,35 @@ model AiReplyDraft {
   createdAt        DateTime      @default(now())
 }
 
+// Appointments (Spec §10.23). Google Calendar sync is added later; the local
+// record works now (providerEventId is filled when sync is enabled).
+model Appointment {
+  id             String   @id @default(cuid())
+  organizationId String
+  coachId        String
+  clientId       String
+  title          String?
+  startsAt       DateTime
+  endsAt         DateTime
+  timezone       String   @default("UTC")
+  location       String?
+  meetingUrl     String?
+  providerEventId String?
+  status         String   @default("booked")
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, coachId])
+  @@index([clientId])
+}
+
+// Key/value settings for feature flags and admin-tunable config (Spec §26.5).
+model Setting {
+  key       String   @id
+  valueJson Json
+  updatedAt DateTime @updatedAt
+}
+
 // ---------------------------------------------------------------------------
 // Billing (plans engine — Spec §13)
 // ---------------------------------------------------------------------------

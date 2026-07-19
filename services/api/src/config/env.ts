@@ -43,6 +43,9 @@ const EnvSchema = z.object({
 
   CONSENT_TEXT_VERSION: z.string().default("v1"),
 
+  // Comma-separated emails allowed into the platform admin console (Spec §26).
+  ADMIN_EMAILS: z.string().default(""),
+
   // Local object storage base dir (dev). Production uses S3-compatible config.
   STORAGE_DIR: z.string().default(".storage"),
 
