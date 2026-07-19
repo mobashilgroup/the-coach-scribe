@@ -20,6 +20,7 @@ import {
 } from "../../domain/ai/providers/index.js";
 import { runAnalysis, runFullPipeline } from "../../domain/ai/pipeline.js";
 import { SUMMARY_SCHEMA_VERSION } from "../../domain/ai/schema.js";
+import { audioDeleteAt } from "../../domain/retention/retention.js";
 import { loadOrgPlan, currentSessionsUsed } from "../billing/plan-context.js";
 import { badRequest, conflict, forbidden, paymentRequired } from "../../lib/errors.js";
 
@@ -292,6 +293,19 @@ export class SessionService {
             },
           });
         }
+      }
+
+      // Schedule audio deletion after successful processing (Spec §15.4): keep
+      // audio only long enough to transcribe/validate, then mark it for deletion.
+      if (mode === "full") {
+        const deleteAt = audioDeleteAt(
+          { audioDeleteAfterHours: this.env.AUDIO_DELETE_AFTER_HOURS, transcriptRetentionDays: this.env.DEFAULT_RETENTION_DAYS },
+          new Date(),
+        );
+        await tx.sessionFile.updateMany({
+          where: { sessionId: session.id, status: "stored" },
+          data: { retentionDeleteAt: deleteAt },
+        });
       }
 
       await tx.session.update({

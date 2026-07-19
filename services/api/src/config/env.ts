@@ -35,6 +35,13 @@ const EnvSchema = z.object({
   // Local object storage base dir (dev). Production uses S3-compatible config.
   STORAGE_DIR: z.string().default(".storage"),
 
+  // Background retention sweep cadence (seconds).
+  RETENTION_SWEEP_SECONDS: z.coerce.number().int().positive().default(3600),
+
+  // Optional queue driver for async processing at scale.
+  REDIS_URL: z.string().optional(),
+  QUEUE_DRIVER: z.enum(["inline", "bullmq"]).default("inline"),
+
   // Optional path to a built coach web app to serve as static files.
   WEB_DIST_DIR: z.string().optional(),
 });
