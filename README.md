@@ -42,11 +42,28 @@ register → add client → new session (free text OR audio upload)
 - **Coach web console** — black/white/gold, no build step, no fake buttons;
   every action hits the real API. Screenshots of the verified run live in
   [`apps/web_portal/verification/`](apps/web_portal/verification/).
-- **52 passing tests** (unit + live-DB E2E incl. the audio recording path).
+- **58 passing tests** (unit + live-DB E2E incl. the audio recording path).
+
+### Fase 2 — client portal + messaging (also browser-verified)
+The continuous-relationship loop (Spec §8.4, §11) is built and verified:
+
+```
+coach shares → invites client (magic link) → client opens portal
+   → sees ONLY shared sections → updates a task → sends an urgent note
+   → AI drafts a reply from minimized context → coach edits & sends
+   → client sees the reply        (nothing is ever sent automatically)
+```
+
+- Single-use magic-link portal access; client tokens rejected on coach endpoints.
+- Sharing persists the exact selected sections; transcript/private notes never exposed.
+- AI reply drafts from **minimized** context (transcript/quotes/emotions stripped).
+- In-app notifications; coach Messages UI + standalone `portal.html`.
+- Verified in Chromium (`apps/web_portal/verification/verify-portal.mjs`).
 
 ### What's next
-- Dedicated AI worker + BullMQ queue, retention worker, Stripe billing, Google OAuth.
+- Dedicated AI worker + BullMQ queue, retention worker, Google OAuth, appointments.
 - Admin console + public site; hardening (rate limiting, at-rest encryption, RS256).
+- Payment gateway (Stripe or alternative) — deferred pending the owner's account.
 - Flutter mobile app with resilient native chunked recording.
 
 ## Layout

@@ -9,6 +9,7 @@
 import type {
   AnalysisProvider,
   AnalyzeParams,
+  ReplyDraftParams,
   TranscribeParams,
   TranscriptionProvider,
   TranscriptionResult,
@@ -59,5 +60,16 @@ export class FakeAnalysisProvider implements AnalysisProvider {
       uncertainties: params.sourceIsFreeText ? ["Source was coach notes, not a verbatim transcript"] : [],
       safety_flags: [],
     };
+  }
+
+  async draftReply(params: ReplyDraftParams): Promise<string> {
+    const opener = params.urgent
+      ? "Thank you for flagging this — I've seen your note."
+      : "Thanks for your message.";
+    return (
+      `${opener} Based on our recent work together, it sounds like you're making real progress. ` +
+      `Let's pick this up and keep the momentum going. I'll follow up with next steps before our next session. ` +
+      `— (Draft for coach review)`
+    );
   }
 }

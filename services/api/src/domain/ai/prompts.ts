@@ -8,9 +8,10 @@
  * language.
  */
 
-import type { AnalyzeParams } from "./providers/types.js";
+import type { AnalyzeParams, ReplyDraftParams } from "./providers/types.js";
 
 export const SUMMARY_PROMPT_VERSION = "summary_v1";
+export const REPLY_PROMPT_VERSION = "reply_draft_v1";
 
 const SYSTEM_RULES = `You are an administrative and analysis assistant for professional coaches.
 You transform a coaching conversation into a structured, editable summary.
@@ -42,4 +43,29 @@ export function buildSummaryPrompt(params: AnalyzeParams): { system: string; use
     .join("\n");
 
   return { system: SYSTEM_RULES, user };
+}
+
+const REPLY_RULES = `You draft a reply a coach may send to their client, for the COACH to review.
+Rules:
+- This is a DRAFT. It will not be sent without the coach's explicit approval.
+- Warm, professional, non-clinical. Do NOT diagnose or give medical/legal advice.
+- Use only the provided context; do not invent facts about the client.
+- If the message suggests an emergency, gently point to appropriate emergency services and keep the reply short.
+- Write in the requested output language.
+- Output plain text only (no JSON, no preamble).`;
+
+export function buildReplyPrompt(params: ReplyDraftParams): { system: string; user: string } {
+  const user = [
+    `Output language: ${params.outputLanguage}.`,
+    params.urgent ? "The client marked this message as urgent." : "",
+    "",
+    "Recent context (already minimized):",
+    params.context || "(no prior context)",
+    "",
+    "Client message:",
+    params.clientMessage,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return { system: REPLY_RULES, user };
 }

@@ -108,7 +108,10 @@ export function summaryRoutes(app: FastifyInstance, deps: { prisma: PrismaClient
       if (body.include.goals) {
         await tx.goal.updateMany({ where: { sessionId: id }, data: { visibility: "shared" } });
       }
-      await tx.session.update({ where: { id }, data: { status: "shared", sharedAt: new Date() } });
+      await tx.session.update({
+        where: { id },
+        data: { status: "shared", sharedAt: new Date(), sharedInclude: body.include as unknown as Prisma.InputJsonValue },
+      });
       await tx.auditLog.create({
         data: {
           organizationId: principal.organizationId,

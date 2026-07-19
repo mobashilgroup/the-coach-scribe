@@ -140,6 +140,7 @@ function renderApp(view) {
         ${navBtn("clients", "Clients")}
         ${navBtn("newSession", "New Session")}
         ${navBtn("history", "Session History")}
+        ${navBtn("messages", "Messages")}
       </nav>
       <div style="position:absolute;bottom:24px">
         <button class="link" data-testid="signout" style="color:#bbb">Sign out</button>
@@ -199,9 +200,11 @@ async function viewClients() {
           return `<div class="list-item"><div class="avatar">${initials(name)}</div>
             <div><div style="font-weight:600" data-testid="client-name">${esc(name)}</div>
             <div class="muted" style="font-size:13px">${esc(c.email || "No email")}</div></div>
-            <div class="spacer"></div><span class="pill">${esc(c.portalStatus)}</span></div>`;
+            <div class="spacer"></div><span class="pill">${esc(c.portalStatus)}</span>
+            <button class="btn ghost" data-invite="${c.id}" data-testid="client-invite" style="padding:6px 12px">Invite to portal</button></div>`;
         }).join("")
       : `<div class="empty">No clients yet.</div>`;
+    $("#clientList").querySelectorAll("[data-invite]").forEach((b) => (b.onclick = () => inviteClient(b.dataset.invite)));
   } catch (e) { toast(e.message); }
 }
 function openAddClient() {
@@ -464,11 +467,86 @@ function wireSessionRows(root) {
 }
 
 /* ---------------------------------------------------------------- Router -- */
+/* -------------------------------------------------------------- Messages -- */
+async function viewMessages() {
+  const main = $("#main");
+  main.innerHTML = `<div class="page-title"><h1 class="serif">Messages</h1></div>
+    <p class="muted">Client notes with an AI-suggested reply. Nothing is sent until you review and send it.</p>
+    <div class="card" id="msgList"><div class="empty">Loading…</div></div>`;
+  try {
+    const { messages } = await api("/v1/messages");
+    if (!messages.length) { $("#msgList").innerHTML = `<div class="empty">No client messages yet.</div>`; return; }
+    $("#msgList").innerHTML = messages.map((m) => {
+      const name = [m.client.firstName, m.client.lastName].filter(Boolean).join(" ");
+      return `<div class="list-item" data-msg="${m.id}" data-testid="message-row" style="cursor:pointer">
+        <div class="avatar">${initials(name)}</div>
+        <div><div style="font-weight:600">${esc(name)} ${m.urgent ? '<span class="pill gold">Urgent</span>' : ""}</div>
+          <div class="muted" style="font-size:13px">${esc(m.body.slice(0, 80))}</div></div>
+        <div class="spacer"></div><span class="pill ${m.status === "sent" ? "green" : "gold"}">${esc(m.status.replace(/_/g, " "))}</span></div>`;
+    }).join("");
+    main.querySelectorAll("[data-msg]").forEach((el) => (el.onclick = () => openMessage(el.dataset.msg)));
+  } catch (e) { toast(e.message); }
+}
+
+async function openMessage(id) {
+  const main = $("#main");
+  main.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const { message, thread } = await api(`/v1/messages/${id}`);
+    const draft = message.drafts && message.drafts[0];
+    main.innerHTML = `<div class="page-title">
+        <button class="btn ghost" data-testid="msg-back" style="padding:8px 12px">←</button>
+        <h1 class="serif" style="font-size:22px">Message from ${esc(message.client.firstName)}</h1>
+        ${message.urgent ? '<span class="pill gold">Urgent</span>' : ""}</div>
+      <div class="card">
+        <div class="muted" style="font-size:13px">Client wrote${message.urgent ? " (marked urgent — not an emergency service)" : ""}:</div>
+        <p data-testid="msg-body">${esc(message.body)}</p>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <label>AI-suggested reply <span class="badge-ai">AI</span> · review & edit before sending</label>
+        <textarea data-testid="reply-body" style="min-height:120px">${esc(draft ? draft.draftBody : "")}</textarea>
+        <div class="row" style="margin-top:12px"><div class="spacer"></div>
+          <button class="btn dark" data-testid="reply-send" ${message.status === "sent" ? "disabled" : ""}>Send reply</button></div>
+      </div>
+      <h3 class="serif" style="margin-top:18px">Conversation</h3>
+      <div class="card" data-testid="thread">${thread.map(threadLine).join("") || '<div class="empty">No messages yet.</div>'}</div>`;
+    $("[data-testid=msg-back]").onclick = () => renderApp("messages");
+    $("[data-testid=reply-send]").onclick = async () => {
+      const body = $("[data-testid=reply-body]").value.trim();
+      if (!body) { toast("Write a reply first"); return; }
+      try { await api(`/v1/messages/${id}/reply`, { method: "POST", body: { body } }); toast("Reply sent to client"); openMessage(id); }
+      catch (e) { toast(e.message); }
+    };
+  } catch (e) { toast(e.message); }
+}
+function threadLine(m) {
+  const mine = m.direction === "coach_to_client";
+  return `<div style="text-align:${mine ? "right" : "left"};margin:6px 0">
+    <span class="pill ${mine ? "blue" : ""}">${mine ? "You" : "Client"}</span>
+    <div style="font-size:14px;margin-top:2px">${esc(m.body)}</div></div>`;
+}
+
+async function inviteClient(clientId) {
+  try {
+    const res = await api(`/v1/clients/${clientId}/invite`, { method: "POST", body: {} });
+    const modal = document.createElement("div");
+    modal.className = "modal-backdrop";
+    modal.innerHTML = `<div class="modal"><h2 class="serif" style="margin-top:0">Portal invitation</h2>
+      <p class="muted" style="font-size:14px">Share this single-use link with your client (email or WhatsApp). It expires in 72 hours.</p>
+      <input readonly value="${esc(res.link)}" data-testid="invite-link" onclick="this.select()" />
+      <div class="row" style="margin-top:14px"><div class="spacer"></div>
+        <button class="btn" data-testid="invite-close">Done</button></div></div>`;
+    document.body.appendChild(modal);
+    $("[data-testid=invite-close]", modal).onclick = () => modal.remove();
+  } catch (e) { toast(e.message); }
+}
+
 const routes = {
   dashboard: viewDashboard,
   clients: viewClients,
   newSession: viewNewSession,
   history: viewHistory,
+  messages: viewMessages,
   session: () => state.current && renderSession(state.current),
 };
 

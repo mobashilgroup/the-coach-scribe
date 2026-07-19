@@ -45,6 +45,24 @@ register/login. Every data route is scoped to the caller's organization.
 | GET | `/v1/goals` | `?clientId`. |
 | PATCH | `/v1/goals/:id` | Update status/progress. |
 
+## Client portal & messaging (Fase 2)
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/v1/clients/:id/invite` | coach | Issues a single-use, 72h magic link. |
+| POST | `/v1/client-portal/exchange` | — | Exchanges a magic-link token for a client token. |
+| GET | `/v1/client-portal/home` | client | Next tasks, last shared summary, unread replies. |
+| GET | `/v1/client-portal/summaries` | client | Only shared sessions. |
+| GET | `/v1/client-portal/summaries/:sessionId` | client | Only the coach-selected sections (never transcript/notes). |
+| GET | `/v1/client-portal/tasks` | client | Shared tasks only. |
+| PATCH | `/v1/client-portal/tasks/:id` | client | Client updates progress. |
+| GET / POST | `/v1/client-portal/messages` | client | Thread / send note (`urgent`). Triggers an AI draft for the coach. |
+| GET | `/v1/messages` | coach | Inbox with the latest AI draft attached. |
+| GET | `/v1/messages/:id` | coach | Message + thread. |
+| POST | `/v1/messages/:id/reply` | coach | Review/edit/send. **Never auto-sent** (Spec §11.6). |
+| GET | `/v1/notifications` · POST `/v1/notifications/:id/read` | coach | In-app notifications. |
+
+Client tokens (`kind=client`) are rejected on coach endpoints and vice-versa.
+
 ## Error codes
 `validation_error` (400), `unauthorized` (401), `upgrade_required` /
 `session_limit_reached` / `client_limit_reached` / `session_too_long` (402),

@@ -43,8 +43,19 @@ export interface AnalyzeParams {
   coachStyle?: string;
 }
 
+export interface ReplyDraftParams {
+  /** The client's incoming message. */
+  clientMessage: string;
+  /** Minimized context from recent approved sessions (Spec §11.6). */
+  context: string;
+  outputLanguage: string;
+  urgent: boolean;
+}
+
 export interface AnalysisProvider {
   readonly name: string;
   /** Returns a JSON object intended to satisfy the summary schema. */
   analyze(params: AnalyzeParams): Promise<unknown>;
+  /** Drafts a reply for the coach to review — never sent automatically. */
+  draftReply(params: ReplyDraftParams): Promise<string>;
 }

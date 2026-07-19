@@ -38,3 +38,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   asserted with screenshots under `apps/web_portal/verification/`.
 - API test suite now **52 passing**, including the recording path
   (consent → chunked upload → transcribe+diarize → approve → export).
+
+### Milestone 2 — Fase 2: client portal + messaging
+
+- **Client portal** (Spec §11): single-use, expiring **magic-link** access;
+  client-scoped tokens that are rejected on coach endpoints. Endpoints for home,
+  shared summaries (only the sections the coach selected), and task progress.
+- **Sharing now persists the exact section selection** (`Session.sharedInclude`);
+  the portal shows only those sections and **never** the transcript, private
+  notes, emotions, or quotes.
+- **Messaging + AI reply drafts** (Spec §8.4, §11.6): a client note (optionally
+  urgent) triggers a **minimized-context** draft reply for the coach — recent
+  approved summaries reduced to summary/topics/goals/actions, with transcript,
+  quotes, and emotions stripped. The draft is **never sent automatically**; the
+  coach reviews, edits, and sends.
+- **In-app notifications** (Spec §25) for new / urgent client messages.
+- **Coach Messages UI** + per-client **Invite to portal**, and a standalone
+  **client portal page** (`portal.html`) — both wired to the real API.
+- New pure unit tests for reply-context redaction; a live-DB E2E of the whole
+  portal loop; and a **browser (Playwright) verification** of the Fase 2 flow
+  asserting the "never auto-sent" and "transcript-never-shared" guarantees.
+- Test suite now **58 passing**.

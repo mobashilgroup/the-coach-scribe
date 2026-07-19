@@ -237,6 +237,8 @@ model Session {
   status         SessionStatus @default(draft)
   consentId      String?
   sharedAt       DateTime?
+  // Exactly which sections the coach chose to share with the client (Spec §10.21).
+  sharedInclude  Json?
   archivedAt     DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -417,9 +419,12 @@ model ClientMessage {
   clientId     String
   client       Client   @relation(fields: [clientId], references: [id])
   coachId      String
+  // client_to_coach = a note/question from the client; coach_to_client = the reply.
+  direction    String   @default("client_to_coach")
   body         String
   urgent       Boolean  @default(false)
   attachmentId String?
+  // submitted → ai_draft_ready → coach_reviewed → sent → read (Spec §17.3)
   status       String   @default("submitted")
   sentAt       DateTime @default(now())
   readAt       DateTime?
@@ -428,6 +433,36 @@ model ClientMessage {
 
   @@index([clientId])
   @@index([coachId, status])
+}
+
+// Single-use, expiring magic-link invitation to the client portal (Spec §11.1).
+// Only the token hash is stored; the URL never carries sensitive data.
+model PortalInvite {
+  id        String    @id @default(cuid())
+  clientId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+// In-app notification (Spec §25). Push/email adapters are added later; the
+// in-app channel works now.
+model Notification {
+  id           String    @id @default(cuid())
+  userId       String
+  type         String
+  title        String
+  body         String?
+  resourceType String?
+  resourceId   String?
+  read         Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  readAt       DateTime?
+
+  @@index([userId, read])
 }
 
 model AiReplyDraft {

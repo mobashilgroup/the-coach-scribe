@@ -7,8 +7,8 @@
  * — this adapter does not trust the model's JSON blindly.
  */
 
-import type { AnalysisProvider, AnalyzeParams } from "./types.js";
-import { buildSummaryPrompt } from "../prompts.js";
+import type { AnalysisProvider, AnalyzeParams, ReplyDraftParams } from "./types.js";
+import { buildReplyPrompt, buildSummaryPrompt } from "../prompts.js";
 
 export interface OpenAIConfig {
   apiKey: string;
@@ -28,6 +28,11 @@ export class OpenAIAnalysisProvider implements AnalysisProvider {
     const prompt = buildSummaryPrompt(params);
     const text = await this.callOpenAI(prompt);
     return safeJsonParse(text);
+  }
+
+  async draftReply(params: ReplyDraftParams): Promise<string> {
+    if (!this.config.apiKey) throw new Error("OPENAI_API_KEY is required for the openai provider");
+    return (await this.callOpenAI(buildReplyPrompt(params))).trim();
   }
 
   /** Isolated network boundary — replace with a real fetch when key is live. */

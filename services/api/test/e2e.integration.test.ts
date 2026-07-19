@@ -241,4 +241,74 @@ d("end-to-end coach flow", () => {
     expect(exportHtml.headers["content-type"]).toMatch(/text\/html/);
     expect(exportHtml.body).toMatch(/Executive summary/);
   });
+
+  it("runs the client portal + AI-reply-draft loop (Spec §8.4, §11), never auto-sending", async () => {
+    // Coach sets up an approved, shared session.
+    const reg = await post("/v1/auth/register", {
+      email: `portal_${Date.now()}@example.com`, password: "supersecret", firstName: "Nadia", acceptedTerms: true });
+    const coach = reg.json().accessToken as string;
+    const clientId = (await post("/v1/clients", { firstName: "Leo", email: "leo@example.com" }, coach)).json().client.id as string;
+    const s = await post("/v1/sessions", { clientId, inputMethod: "free_text", freeText: "Leo wants to run a marathon and build a training habit." }, coach);
+    const sid = s.json().session.id as string;
+    await post(`/v1/sessions/${sid}/process`, {}, coach);
+    await post(`/v1/sessions/${sid}/summary/approve`, {}, coach);
+    await post(`/v1/sessions/${sid}/share`, { include: { summary: true, tasks: true, goals: true } }, coach);
+
+    // Coach invites the client to the portal (magic link).
+    const invite = await post(`/v1/clients/${clientId}/invite`, {}, coach);
+    expect(invite.statusCode).toBe(201);
+    const magicToken = invite.json().token as string;
+
+    // Client exchanges the magic link for a portal token.
+    const ex = await post("/v1/client-portal/exchange", { token: magicToken });
+    expect(ex.statusCode).toBe(200);
+    const clientToken = ex.json().accessToken as string;
+
+    // A used magic link cannot be reused.
+    expect((await post("/v1/client-portal/exchange", { token: magicToken })).statusCode).toBe(401);
+
+    // Client sees only shared content.
+    const home = await get("/v1/client-portal/home", clientToken);
+    expect(home.statusCode).toBe(200);
+    const summaries = await get("/v1/client-portal/summaries", clientToken);
+    expect(summaries.json().summaries.length).toBe(1);
+    const detail = await get(`/v1/client-portal/summaries/${sid}`, clientToken);
+    expect(detail.json().shared.summary.length).toBeGreaterThan(0);
+    expect(detail.json().shared.transcript).toBeUndefined(); // never shared
+
+    // Client updates a shared task.
+    const tasks = await get("/v1/client-portal/tasks", clientToken);
+    const taskId = tasks.json().tasks[0].id as string;
+    const upd = await app.inject({ method: "PATCH", url: `/v1/client-portal/tasks/${taskId}`, payload: { status: "in_progress" }, headers: { authorization: `Bearer ${clientToken}` } });
+    expect(upd.json().task.status).toBe("in_progress");
+
+    // A client token must NOT work on coach endpoints.
+    expect((await get("/v1/clients", clientToken)).statusCode).toBe(401);
+
+    // Client sends an urgent note → an AI draft is prepared for the coach (not the client).
+    const msg = await post("/v1/client-portal/messages", { body: "I'm struggling to stay motivated this week.", urgent: true }, clientToken);
+    expect(msg.statusCode).toBe(201);
+    expect(msg.json().message.draftBody).toBeUndefined(); // draft is never returned to the client
+
+    // Coach sees the message with an AI draft, and a notification was created.
+    const inbox = await get("/v1/messages", coach);
+    expect(inbox.json().messages.length).toBe(1);
+    const messageId = inbox.json().messages[0].id as string;
+    expect(inbox.json().messages[0].drafts[0].draftBody.length).toBeGreaterThan(0);
+    const notifs = await get("/v1/notifications", coach);
+    expect(notifs.json().unread).toBeGreaterThan(0);
+    expect(notifs.json().notifications[0].type).toBe("client_message_urgent");
+
+    // Nothing was sent to the client automatically: the thread has only the client's message.
+    const threadBefore = await get("/v1/client-portal/messages", clientToken);
+    expect(threadBefore.json().messages.filter((m: { direction: string }) => m.direction === "coach_to_client").length).toBe(0);
+
+    // Coach reviews/edits and sends the reply.
+    const reply = await post(`/v1/messages/${messageId}/reply`, { body: "Let's set one small goal for this week — I'm proud of your progress." }, coach);
+    expect(reply.statusCode).toBe(200);
+
+    // Now the client sees the coach's reply.
+    const threadAfter = await get("/v1/client-portal/messages", clientToken);
+    expect(threadAfter.json().messages.filter((m: { direction: string }) => m.direction === "coach_to_client").length).toBe(1);
+  });
 });

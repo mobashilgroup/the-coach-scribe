@@ -12,6 +12,8 @@ import { summaryRoutes } from "./modules/summaries/summaries.routes.js";
 import { taskRoutes } from "./modules/tasks/tasks.routes.js";
 import { uploadRoutes } from "./modules/uploads/uploads.routes.js";
 import { exportRoutes } from "./modules/exports/exports.routes.js";
+import { portalRoutes } from "./modules/portal/portal.routes.js";
+import { messagingRoutes, notificationRoutes } from "./modules/messaging/messaging.routes.js";
 
 export interface BuildOptions {
   prisma: PrismaClient;
@@ -45,6 +47,9 @@ export function buildApp({ prisma, env }: BuildOptions): FastifyInstance {
   taskRoutes(app, { prisma });
   uploadRoutes(app, { prisma, storage });
   exportRoutes(app, { prisma });
+  portalRoutes(app, { prisma, env });
+  messagingRoutes(app, { prisma, env });
+  notificationRoutes(app, { prisma });
 
   // Optionally serve the coach web app (static, no build step) at /app.
   if (env.WEB_DIST_DIR) {
