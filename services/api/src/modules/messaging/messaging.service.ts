@@ -12,11 +12,13 @@ import type { Env } from "../../config/env.js";
 import { createAnalysisProvider, type ProviderConfig } from "../../domain/ai/providers/index.js";
 import { REPLY_PROMPT_VERSION } from "../../domain/ai/prompts.js";
 import { buildReplyContext, isClientLinkedToCoach, type ApprovedSummaryLike } from "../../domain/messaging/reply-context.js";
+import { createEmailProvider, type EmailProvider } from "../../domain/notify/email.js";
 import type { Principal } from "../../lib/context.js";
 import { forbidden, notFound } from "../../lib/errors.js";
 
 export class MessagingService {
   private readonly providerConfig: ProviderConfig;
+  private readonly email: EmailProvider;
   constructor(
     private readonly prisma: PrismaClient,
     private readonly env: Env,
@@ -27,6 +29,7 @@ export class MessagingService {
       openaiApiKey: env.OPENAI_API_KEY,
       openaiModel: env.OPENAI_MODEL,
     };
+    this.email = createEmailProvider(env);
   }
 
   /** Client submits a note/question → AI draft prepared for the coach. */
@@ -87,6 +90,22 @@ export class MessagingService {
       });
       return d;
     });
+
+    // Best-effort email to the coach (in-app notification already persisted).
+    if (this.email.name !== "noop") {
+      try {
+        const coach = await this.prisma.user.findUnique({ where: { id: client.primaryCoachId } });
+        if (coach?.email) {
+          await this.email.send({
+            to: coach.email,
+            subject: input.urgent ? "Urgent message from a client" : "New message from a client",
+            text: `${client.firstName} sent you a message in The Coach Scribe. Open your dashboard to review the AI-suggested reply.`,
+          });
+        }
+      } catch {
+        // Never fail the client's action because email delivery hiccupped.
+      }
+    }
 
     return { message, draft };
   }

@@ -95,6 +95,44 @@ export class AuthService {
     };
   }
 
+  /** Find-or-create a user from a verified OAuth identity, then issue a token. */
+  async oauthUpsert(identity: { email: string; firstName: string; lastName?: string; provider: string; subject: string }): Promise<AuthResult> {
+    const email = identity.email.toLowerCase().trim();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    if (existing) {
+      if (!existing.oauthProvider) {
+        await this.prisma.user.update({
+          where: { id: existing.id },
+          data: { oauthProvider: identity.provider, oauthSubject: identity.subject, emailVerifiedAt: existing.emailVerifiedAt ?? new Date() },
+        });
+      }
+      const membership = await this.prisma.membership.findFirst({ where: { userId: existing.id, status: "active" }, orderBy: { createdAt: "asc" } });
+      if (!membership) throw unauthorized("No active organization", "no_membership");
+      const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: membership.organizationId } });
+      const accessToken = await signAccessToken({ sub: existing.id, org: org.id, role: membership.role }, this.env.JWT_SECRET, this.env.JWT_ACCESS_TTL);
+      return { accessToken, user: { id: existing.id, email: existing.email, firstName: existing.firstName }, organization: { id: org.id, slug: org.slug } };
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, firstName: identity.firstName, lastName: identity.lastName, oauthProvider: identity.provider, oauthSubject: identity.subject, emailVerifiedAt: new Date() },
+      });
+      const org = await tx.organization.create({ data: { name: `${identity.firstName}'s practice`, slug: uniqueSlug(identity.firstName), ownerUserId: user.id } });
+      await tx.membership.create({ data: { organizationId: org.id, userId: user.id, role: "owner", status: "active" } });
+      await tx.coachProfile.create({ data: { userId: user.id, displayName: identity.firstName, specialties: [], languages: ["en"] } });
+      const trialPlan = await tx.plan.findFirst({ where: { name: "free_trial", active: true } });
+      if (trialPlan) {
+        await tx.organization.update({ where: { id: org.id }, data: { planId: trialPlan.id } });
+        await tx.subscription.create({ data: { organizationId: org.id, planId: trialPlan.id, provider: "none", status: "trialing" } });
+      }
+      await tx.auditLog.create({ data: { actorId: user.id, organizationId: org.id, action: "auth.oauth_register", resourceType: "user", resourceId: user.id } });
+      return { user, org };
+    });
+    const accessToken = await signAccessToken({ sub: result.user.id, org: result.org.id, role: "owner" }, this.env.JWT_SECRET, this.env.JWT_ACCESS_TTL);
+    return { accessToken, user: { id: result.user.id, email: result.user.email, firstName: result.user.firstName }, organization: { id: result.org.id, slug: result.org.slug } };
+  }
+
   async login(email: string, password: string): Promise<AuthResult> {
     const normalized = email.toLowerCase().trim();
     const user = await this.prisma.user.findUnique({ where: { email: normalized } });

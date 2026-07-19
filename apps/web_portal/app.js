@@ -77,6 +77,16 @@ function renderAuth(mode = "login") {
   mode === "login" ? loginForm() : registerForm();
 }
 
+async function continueWithGoogle() {
+  try {
+    const { url } = await api("/v1/auth/oauth/google/url");
+    window.location.href = url;
+  } catch (e) {
+    // 501 until the owner provisions Google credentials — inform gracefully.
+    toast(e.status === 501 ? "Google sign-in isn't enabled yet" : e.message);
+  }
+}
+
 function loginForm() {
   $("#authForm").innerHTML = `
     <h2 class="serif" style="margin:0 0 4px">Welcome back, Coach</h2>
@@ -85,9 +95,11 @@ function loginForm() {
     <label>Password</label><input id="password" type="password" data-testid="login-password" autocomplete="current-password" />
     <div class="error-text" id="err"></div>
     <button class="btn block" data-testid="login-submit" style="margin-top:12px">Log In</button>
+    <button class="btn ghost block" data-testid="login-google" style="margin-top:10px">Continue with Google</button>
     <p class="muted" style="text-align:center;margin-top:16px">No account?
       <button class="link" id="toRegister" data-testid="to-register">Create one</button></p>`;
   $("#toRegister").onclick = registerForm;
+  $("[data-testid=login-google]").onclick = continueWithGoogle;
   $("[data-testid=login-submit]").onclick = async () => {
     try {
       const auth = await api("/v1/auth/login", { method: "POST", body: { email: $("#email").value.trim(), password: $("#password").value } });

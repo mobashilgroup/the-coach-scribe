@@ -26,6 +26,17 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o"),
 
+  // Notifications delivery (in-app always on; these add email/push).
+  EMAIL_PROVIDER: z.enum(["noop", "sendgrid"]).default("noop"),
+  EMAIL_PROVIDER_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("The Coach Scribe <no-reply@thecoachscribe.com>"),
+  PUSH_PROVIDER: z.enum(["noop", "fcm"]).default("noop"),
+
+  // Google OAuth (sign-in + future Calendar/Drive).
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
+
   DEFAULT_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
   AUDIO_DELETE_AFTER_HOURS: z.coerce.number().int().positive().default(24),
   MAX_SESSION_MINUTES: z.coerce.number().int().positive().default(60),
