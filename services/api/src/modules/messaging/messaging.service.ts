@@ -28,6 +28,8 @@ export class MessagingService {
       analysis: env.ANALYSIS_PROVIDER,
       openaiApiKey: env.OPENAI_API_KEY,
       openaiModel: env.OPENAI_MODEL,
+      anthropicApiKey: env.ANTHROPIC_API_KEY,
+      anthropicModel: env.ANTHROPIC_MODEL,
     };
     this.email = createEmailProvider(env);
   }

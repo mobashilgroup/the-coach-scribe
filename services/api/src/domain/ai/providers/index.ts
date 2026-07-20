@@ -8,17 +8,20 @@ import { FakeAnalysisProvider, FakeTranscriptionProvider } from "./fake.js";
 import { DeepgramTranscriptionProvider } from "./deepgram.js";
 import { AssemblyAITranscriptionProvider } from "./assemblyai.js";
 import { OpenAIAnalysisProvider } from "./openai.js";
+import { ClaudeAnalysisProvider } from "./claude.js";
 import type { AnalysisProvider, TranscriptionProvider } from "./types.js";
 
 export interface ProviderConfig {
   transcription: "fake" | "deepgram" | "assemblyai";
-  analysis: "fake" | "openai";
+  analysis: "fake" | "openai" | "claude";
   deepgramApiKey?: string;
   deepgramModel?: string;
   assemblyaiApiKey?: string;
   assemblyaiModel?: string;
   openaiApiKey?: string;
   openaiModel?: string;
+  anthropicApiKey?: string;
+  anthropicModel?: string;
 }
 
 export function createTranscriptionProvider(config: ProviderConfig): TranscriptionProvider {
@@ -45,6 +48,11 @@ export function createAnalysisProvider(config: ProviderConfig): AnalysisProvider
       return new OpenAIAnalysisProvider({
         apiKey: config.openaiApiKey ?? "",
         model: config.openaiModel ?? "gpt-4o",
+      });
+    case "claude":
+      return new ClaudeAnalysisProvider({
+        apiKey: config.anthropicApiKey ?? "",
+        model: config.anthropicModel ?? "claude-opus-4-8",
       });
     case "fake":
     default:

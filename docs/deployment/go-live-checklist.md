@@ -11,7 +11,7 @@ below and flip the matching env switches. No code changes are required.
 | **PostgreSQL** (managed) | `DATABASE_URL` | Persistence (required) |
 | **Redis** (managed) | `REDIS_URL`, `QUEUE_DRIVER=bullmq` | Async processing at scale |
 | **S3-compatible storage** | `OBJECT_STORAGE_*` | Private media + signed URLs |
-| **OpenAI** | `OPENAI_API_KEY`, `ANALYSIS_PROVIDER=openai`, `OPENAI_MODEL` | Real AI summaries + reply drafts |
+| **Analysis** (pick one) | OpenAI: `OPENAI_API_KEY`, `ANALYSIS_PROVIDER=openai` · **or** Claude: `ANTHROPIC_API_KEY`, `ANALYSIS_PROVIDER=claude` | Real AI summaries + reply drafts |
 | **Transcription** (pick one) | Deepgram: `DEEPGRAM_API_KEY`, `TRANSCRIPTION_PROVIDER=deepgram` · **or** AssemblyAI: `ASSEMBLYAI_API_KEY`, `TRANSCRIPTION_PROVIDER=assemblyai` | Real transcription + speaker separation |
 | **Google OAuth** | `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI` | "Continue with Google" sign-in |
 | **Email** (e.g. SendGrid) | `EMAIL_PROVIDER=sendgrid`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` | Email notifications |

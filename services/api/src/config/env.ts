@@ -20,13 +20,15 @@ const EnvSchema = z.object({
   JWT_REFRESH_TTL: z.coerce.number().int().positive().default(2_592_000),
 
   TRANSCRIPTION_PROVIDER: z.enum(["fake", "deepgram", "assemblyai"]).default("fake"),
-  ANALYSIS_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
+  ANALYSIS_PROVIDER: z.enum(["fake", "openai", "claude"]).default("fake"),
   DEEPGRAM_API_KEY: z.string().optional(),
   DEEPGRAM_MODEL: z.string().default("nova-2"),
   ASSEMBLYAI_API_KEY: z.string().optional(),
   ASSEMBLYAI_MODEL: z.string().default("best"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o"),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-opus-4-8"),
 
   // Notifications delivery (in-app always on; these add email/push).
   EMAIL_PROVIDER: z.enum(["noop", "sendgrid"]).default("noop"),
@@ -82,6 +84,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   }
   if (parsed.data.ANALYSIS_PROVIDER === "openai" && !parsed.data.OPENAI_API_KEY) {
     throw new Error("ANALYSIS_PROVIDER=openai requires OPENAI_API_KEY");
+  }
+  if (parsed.data.ANALYSIS_PROVIDER === "claude" && !parsed.data.ANTHROPIC_API_KEY) {
+    throw new Error("ANALYSIS_PROVIDER=claude requires ANTHROPIC_API_KEY");
   }
   cached = parsed.data;
   return cached;

@@ -29,11 +29,12 @@ default in dev and tests.
 | Role | Options (`*_PROVIDER`) | Notes |
 |---|---|---|
 | Transcription + diarization | `fake` · `deepgram` · `assemblyai` | Deepgram is synchronous; AssemblyAI submits then polls until complete. Both need a reachable (signed) audio URL. |
-| Analysis + reply drafts | `fake` · `openai` | JSON-mode summaries; plain-text reply drafts. |
+| Analysis + reply drafts | `fake` · `openai` · `claude` | JSON summaries + plain-text reply drafts. Claude uses the official Anthropic SDK (`claude-opus-4-8`, adaptive thinking). |
 
-All live adapters (`deepgram.ts`, `assemblyai.ts`, `openai.ts`) take an
-injectable `fetch`, so request shaping and response mapping are unit-tested with
-no key or network. Swapping providers is an env change — e.g.
+Live adapters are unit-tested with no key or network: `deepgram.ts`,
+`assemblyai.ts`, `openai.ts` take an injectable `fetch`; `claude.ts` takes an
+injectable Anthropic client. Swapping providers is an env change — e.g.
+`ANALYSIS_PROVIDER=claude` + `ANTHROPIC_API_KEY`, or
 `TRANSCRIPTION_PROVIDER=assemblyai` + `ASSEMBLYAI_API_KEY` — with no code change.
 
 ## Schema & repair (§14.3, §14.4)
