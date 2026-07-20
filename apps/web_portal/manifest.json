@@ -1,0 +1,14 @@
+{
+  "name": "The Coach Scribe",
+  "short_name": "Coach Scribe",
+  "description": "Record, transcribe and review coaching sessions.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

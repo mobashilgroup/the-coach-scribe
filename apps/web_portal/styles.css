@@ -89,7 +89,7 @@ button.btn:disabled { opacity: .5; cursor: not-allowed; }
   background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 10px; opacity: 0; transition: .25s; pointer-events: none; z-index: 50;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 10px; }
 .method { border: 1px solid var(--line); border-radius: 12px; padding: 16px; cursor: pointer; background: #fff; }
 .method.selected { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
 .method .t { font-weight: 600; }
@@ -107,3 +107,7 @@ button.btn:disabled { opacity: .5; cursor: not-allowed; }
   .grid.cols-2, .grid.cols-3, .method-grid { grid-template-columns: 1fr; }
   .main { padding: 22px; }
 }
+
+/* Recording indicator pulse */
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+button.btn.danger { background: var(--error); color: #fff; }

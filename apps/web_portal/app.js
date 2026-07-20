@@ -3,6 +3,8 @@
  * origin. No secrets live here; the browser only holds the coach's own access
  * token (Spec §19.5). */
 
+import { SessionRecorder, saveMeta, getMeta, listPending, getChunks, deleteRecording } from "./recorder.js";
+
 const API = ""; // same origin as the API server
 const $ = (sel, root = document) => root.querySelector(sel);
 const app = () => document.getElementById("app");
@@ -263,6 +265,7 @@ async function viewNewSession() {
       <label>Input method</label>
       <div class="method-grid">
         <div class="method selected" data-method="free_text" data-testid="method-free_text"><div class="t">✎ Write Free Text</div><div class="muted" style="font-size:13px">Type notes taken outside the app</div></div>
+        <div class="method" data-method="record_audio" data-testid="method-record_audio"><div class="t">● Record now</div><div class="muted" style="font-size:13px">Live recording — works offline / airplane mode</div></div>
         <div class="method" data-method="upload_audio" data-testid="method-upload_audio"><div class="t">⭑ Upload Audio</div><div class="muted" style="font-size:13px">Upload a recording (consent required)</div></div>
       </div>
       <div id="methodBody" style="margin-top:16px"></div>
@@ -274,8 +277,26 @@ async function viewNewSession() {
   }));
   renderMethodBody();
 }
+function consentCard() {
+  return `<div class="card" style="background:#faf9f6">
+      <b>Recording Consent</b>
+      <p class="muted" style="font-size:14px">This conversation will be transcribed and analyzed. The audio is deleted after processing per your retention settings. You confirm the client was informed and consented. Some jurisdictions require all-party consent.</p>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="consent" data-testid="consent-check" style="width:auto" /> I informed the client and recorded their consent.</label>
+    </div>`;
+}
+
 function renderMethodBody() {
   const body = $("#methodBody");
+  if (draft.method === "record_audio") {
+    body.innerHTML = `${consentCard()}
+      <div class="muted" style="font-size:13px;margin-top:10px">You can switch to airplane mode after starting — the recording is saved on this device and uploads when you reconnect.</div>
+      <div class="error-text" id="nsErr"></div>
+      <button class="btn" data-testid="start-recording" style="margin-top:10px" disabled>Start recording</button>`;
+    const btn = $("[data-testid=start-recording]");
+    $("#consent").onchange = () => (btn.disabled = !$("#consent").checked); // consent gate (Spec §10.11)
+    btn.onclick = startLiveRecording;
+    return;
+  }
   if (draft.method === "free_text") {
     body.innerHTML = `<label>Session notes</label>
       <textarea id="freeText" data-testid="session-freetext" placeholder="What happened in the session…"></textarea>
@@ -338,6 +359,140 @@ async function createAudio() {
     await api(`/v1/sessions/${session.id}/process`, { method: "POST", body: {} });
     toast("Transcript & summary ready"); openSession(session.id);
   } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = "Upload & Process"; }
+}
+
+/* --------------------------------------------------- Live recording -- */
+let activeRec = null;
+
+function newRecordingId() {
+  // Time-ordered, collision-resistant id without needing the network.
+  return `rec_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function startLiveRecording() {
+  const err = $("#nsErr");
+  const clientId = $("#client").value;
+  const title = $("#title").value.trim();
+  const recordingId = newRecordingId();
+  try {
+    const rec = new SessionRecorder({
+      recordingId,
+      onTick: (ms) => { const t = $("[data-testid=rec-timer]"); if (t) t.textContent = fmtDuration(ms); },
+      onLevel: (l) => { const bar = $("#level"); if (bar) bar.style.width = `${Math.round(l * 100)}%`; },
+    });
+    await rec.start();
+    activeRec = rec;
+    await saveMeta({ id: recordingId, clientId, title, consent: true, status: "recording", createdAt: Date.now(), mimeType: rec.mimeType });
+    renderRecordingScreen(recordingId, clientId);
+  } catch (e) {
+    err.textContent = e.name === "NotAllowedError" ? "Microphone permission denied" : `Could not start recording: ${e.message}`;
+  }
+}
+
+function fmtDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function renderRecordingScreen(recordingId, clientId) {
+  const client = state.clients.find((c) => c.id === clientId) || {};
+  const name = [client.firstName, client.lastName].filter(Boolean).join(" ") || "Client";
+  const main = $("#main");
+  main.innerHTML = `
+    <div class="page-title"><h1 class="serif" style="font-size:22px">Recording</h1>
+      <span class="pill ${navigator.onLine ? "green" : "gold"}" data-testid="net-badge">${navigator.onLine ? "Online" : "Offline — saved on device"}</span></div>
+    <div class="card" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="width:12px;height:12px;border-radius:50%;background:var(--error);display:inline-block;animation:pulse 1.2s infinite"></span>
+        <span class="serif" style="font-size:34px" data-testid="rec-timer">00:00</span>
+      </div>
+      <div class="muted" style="margin-top:4px">${esc(name)}</div>
+      <div style="height:8px;background:var(--line);border-radius:6px;margin:16px auto;max-width:320px;overflow:hidden">
+        <div id="level" style="height:100%;width:0;background:var(--gold);transition:width .1s"></div>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:6px">
+        <button class="btn ghost" data-testid="rec-pause">Pause</button>
+        <button class="btn danger" data-testid="rec-finish">Finish</button>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:12px">
+        <button class="btn ghost" data-mark="insight" data-testid="mark-insight">✦ Insight</button>
+        <button class="btn ghost" data-mark="task">✓ Task</button>
+        <button class="btn ghost" data-mark="goal">◎ Goal</button>
+      </div>
+      <div class="muted" data-testid="marker-count" style="font-size:13px;margin-top:8px">0 markers · saved securely on this device</div>
+    </div>
+    <div class="error-text" id="recErr"></div>`;
+  const pauseBtn = $("[data-testid=rec-pause]");
+  pauseBtn.onclick = () => {
+    if (activeRec._rec && activeRec._rec.state === "recording") { activeRec.pause(); pauseBtn.textContent = "Resume"; }
+    else { activeRec.resume(); pauseBtn.textContent = "Pause"; }
+  };
+  main.querySelectorAll("[data-mark]").forEach((b) => (b.onclick = () => {
+    const n = activeRec.mark(b.dataset.mark);
+    $("[data-testid=marker-count]").textContent = `${n} markers · saved securely on this device`;
+  }));
+  $("[data-testid=rec-finish]").onclick = () => finishRecording(recordingId);
+  window.addEventListener("online", updateNetBadge);
+  window.addEventListener("offline", updateNetBadge);
+}
+function updateNetBadge() {
+  const b = $("[data-testid=net-badge]");
+  if (b) { b.textContent = navigator.onLine ? "Online" : "Offline — saved on device"; b.className = `pill ${navigator.onLine ? "green" : "gold"}`; }
+}
+
+async function finishRecording(recordingId) {
+  const rec = activeRec;
+  activeRec = null;
+  const result = await rec.stop();
+  const meta = (await getMeta(recordingId)) || { id: recordingId };
+  meta.status = "pending";
+  meta.durationSeconds = Math.max(1, Math.round(result.durationMs / 1000));
+  meta.chunkCount = result.chunkCount;
+  meta.mimeType = result.mimeType;
+  meta.markers = result.markers;
+  await saveMeta(meta);
+
+  if (navigator.onLine) {
+    try { await syncRecording(meta); return; }
+    catch (e) { toast(`Saved on device — upload failed, will retry: ${e.message}`); renderApp("dashboard"); return; }
+  }
+  toast("Saved on this device. It will upload when you reconnect.");
+  renderApp("dashboard");
+}
+
+/** Create the session, record consent, upload the queued chunks, and process. */
+async function syncRecording(meta) {
+  const chunks = await getChunks(meta.id);
+  if (!chunks.length) { await deleteRecording(meta.id); return; }
+
+  const { session } = await api("/v1/sessions", { method: "POST", body: {
+    clientId: meta.clientId, inputMethod: "record_audio", title: meta.title || undefined,
+    durationSeconds: meta.durationSeconds, outputLanguage: "en" } });
+  await api(`/v1/sessions/${session.id}/consent`, { method: "POST", body: { confirmed: true, method: "coach_checkbox" } });
+
+  const fileName = `recording.${(meta.mimeType || "audio/webm").includes("mp4") ? "m4a" : "webm"}`;
+  const totalSize = chunks.reduce((n, b) => n + b.size, 0);
+  const init = await api(`/v1/sessions/${session.id}/upload/init`, { method: "POST", body: {
+    fileName, mimeType: meta.mimeType || "audio/webm", totalSize, totalChunks: chunks.length } });
+  for (let i = 0; i < chunks.length; i++) {
+    const buf = new Uint8Array(await chunks[i].arrayBuffer());
+    await api(`/v1/sessions/${session.id}/upload/${init.uploadId}/chunk/${i}`, { method: "PUT", raw: true, body: buf });
+  }
+  await api(`/v1/sessions/${session.id}/upload/${init.uploadId}/complete`, { method: "POST", body: { totalChunks: chunks.length, fileName } });
+  await api(`/v1/sessions/${session.id}/process`, { method: "POST", body: {} });
+  await deleteRecording(meta.id);
+  toast("Recording uploaded and processed");
+  openSession(session.id);
+}
+
+/** On reconnect (or app load while online), upload anything queued on-device. */
+async function flushPendingRecordings() {
+  if (!navigator.onLine || !state.token) return;
+  let pending = [];
+  try { pending = await listPending(); } catch { return; }
+  for (const meta of pending) {
+    try { await syncRecording(meta); } catch { /* keep for the next reconnect */ }
+  }
 }
 
 /* -------------------------------------------------------- Session review -- */
@@ -565,5 +720,14 @@ const routes = {
 function boot() {
   if (state.token) renderApp("dashboard");
   else renderAuth();
+
+  // Upload any on-device recordings queued while offline, now and on reconnect.
+  flushPendingRecordings();
+  window.addEventListener("online", flushPendingRecordings);
+
+  // Register the service worker so the app shell loads offline (PWA).
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
 }
 boot();

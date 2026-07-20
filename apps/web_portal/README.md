@@ -26,7 +26,23 @@ entire workflow and asserts each stage (register → … → export, plus the
 audio-upload path with consent gating and diarization). The driver script is
 `verification/verify-workflow.mjs`.
 
+## Offline-resilient recording (PWA)
+
+The **Record now** flow captures microphone audio with `MediaRecorder`, writing
+each chunk straight to **IndexedDB** (`recorder.js`). If the phone goes into
+**airplane mode** mid-session, the recording is kept on-device and uploaded
+automatically on reconnect via the resumable-upload endpoints. A service worker
+(`sw.js`) precaches the app shell so the console loads offline, and
+`manifest.json` makes it an installable PWA.
+
+Verified in a real browser with a fake microphone
+(`verification/verify-recording.mjs`): record → go offline → finish (queued
+on-device) → reconnect → auto-upload → transcribe → review.
+
+> **Browser limit (native-only):** a web app cannot auto-start recording when
+> the phone unlocks, or record in the background — that needs the Flutter app.
+> Here recording needs one tap to begin, but survives going offline.
+
 > This is the Milestone-2 coach console. It is intentionally lean (the full
-> screen map — settings, integrations, billing, appointments — lands in later
-> milestones) but contains **no fake buttons**: everything shown works against
-> the API.
+> screen map — settings, integrations, billing — lands in later milestones)
+> but contains **no fake buttons**: everything shown works against the API.
