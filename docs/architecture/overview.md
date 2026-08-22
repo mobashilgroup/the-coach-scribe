@@ -14,7 +14,7 @@ scaffolded and documented for subsequent milestones.
 | Coach web app | `apps/web_portal` | Milestone 2 |
 | Public website | `apps/public_website` | Milestone 2 |
 | Admin console | `apps/admin_console` | Milestone 2 |
-| Flutter mobile | `apps/mobile_flutter` | Milestone 3 |
+| Flutter mobile | `apps/mobile_flutter` | Scaffolded (real code; device-verification pending — no Flutter SDK in this env) |
 
 ## Backend stack (Milestone 1)
 

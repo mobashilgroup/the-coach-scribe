@@ -76,3 +76,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `.dockerignore`, and deployment docs (go-live checklist, env-var table,
   production/staging guides, failure runbook, backup/restore plan).
 - New Appointment + Setting models (migrations). Test suite **77 passing**.
+
+### Milestone 3 (start) — Flutter mobile app (scaffolded)
+
+- **`apps/mobile_flutter`**: a real Flutter app wired to the same API — auth,
+  dashboard, clients (list+add), new session (record now / free text), recording
+  consent, **native microphone recording** (`record`), an **offline upload
+  queue** that survives airplane mode and syncs on reconnect
+  (`connectivity_plus`), AI review, approve, share, and history. Brand theme
+  (black/white/gold), token persistence, configurable API base URL.
+- Authored without a Flutter SDK in the environment, so it is **not yet compiled
+  or device-verified**; README documents run/verify steps and the native
+  background/auto-start-on-unlock roadmap (the reasons the native app exists).
+- Also added a Claude (Anthropic) analysis provider and an AssemblyAI
+  transcription provider (both env-selectable, key-guarded, unit-tested);
+  offline-resilient web recording + installable PWA in `apps/web_portal`.

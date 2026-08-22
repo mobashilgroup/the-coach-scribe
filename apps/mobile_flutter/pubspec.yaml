@@ -1,0 +1,24 @@
+name: coach_scribe
+description: The Coach Scribe — mobile app for coaches (record, review, share sessions).
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0                # REST calls to the Coach Scribe API
+  shared_preferences: ^2.2.2 # persist the access token + offline queue metadata
+  path_provider: ^2.1.2      # local file paths for recordings
+  record: ^5.0.4             # native microphone recording (handles mic permission)
+  connectivity_plus: ^6.0.1  # detect reconnect to flush the offline queue
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

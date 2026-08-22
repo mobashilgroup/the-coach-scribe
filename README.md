@@ -82,10 +82,18 @@ a config change, not new code:
 checklist), and the **payment gateway** decision — deferred by request; the plans
 engine, subscriptions, and usage ledger are already in place to gate access.
 
+### Mobile app (Flutter) — scaffolded, device-verification pending
+`apps/mobile_flutter/` is a real Flutter app (auth, dashboard, clients, record
+now / free text, native recording + offline upload queue, AI review, approve,
+share, history) wired to the same API. It was authored without a Flutter SDK in
+the build environment, so it is **not yet compiled or device-verified** — run
+`flutter pub get` and verify on a device. The truly native pieces (auto-start on
+unlock, background recording) are scoped in its README roadmap.
+
 ### Later milestones
 - BullMQ async processing at scale; RS256 JWTs, rate limiting, at-rest encryption.
 - Google Calendar/Drive sync; WhatsApp channel.
-- Flutter mobile app with resilient native chunked recording.
+- Native background/auto-start recording for the Flutter app; store submission.
 
 ## Layout
 
